@@ -16,6 +16,7 @@ import { CATEGORIES } from '../constants/categories';
 import { formatCurrency } from '../utils/formatCurrency';
 import { getById, deleteById } from '../services/transactionService';
 import CategoryBadge from '../components/CategoryBadge';
+import { SkeletonDetail } from '../components/Skeleton';
 
 export default function TransactionDetailScreen({ route, navigation }) {
   const { id } = route.params;
@@ -69,9 +70,8 @@ export default function TransactionDetailScreen({ route, navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Memuat data...</Text>
+      <View style={styles.container}>
+        <SkeletonDetail />
       </View>
     );
   }

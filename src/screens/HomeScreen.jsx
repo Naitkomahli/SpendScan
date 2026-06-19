@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  FlatList,
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +14,7 @@ import { formatCurrency } from '../utils/formatCurrency';
 import { getAll } from '../services/transactionService';
 import TransactionCard from '../components/TransactionCard';
 import EmptyState from '../components/EmptyState';
+import { Skeleton, SkeletonSummaryCard, SkeletonCard } from '../components/Skeleton';
 
 export default function HomeScreen({ navigation }) {
   const [transactions, setTransactions] = useState([]);
@@ -53,9 +53,27 @@ export default function HomeScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Memuat data...</Text>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.headerRow}>
+            <View>
+              <Skeleton width={120} height={14} borderRadius={6} />
+              <Skeleton width={180} height={24} style={{ marginTop: 6 }} borderRadius={6} />
+            </View>
+            <Skeleton width={40} height={40} borderRadius={20} />
+          </View>
+        </View>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <SkeletonSummaryCard />
+          <View style={styles.actionGrid}>
+            <Skeleton width="48%" height={80} borderRadius={12} />
+            <Skeleton width="48%" height={80} borderRadius={12} />
+          </View>
+          <Skeleton width={150} height={18} style={{ marginBottom: 12 }} borderRadius={6} />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </ScrollView>
       </View>
     );
   }

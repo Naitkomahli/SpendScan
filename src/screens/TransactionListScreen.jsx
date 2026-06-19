@@ -16,6 +16,7 @@ import { colors } from '../constants/colors';
 import { CATEGORIES } from '../constants/categories';
 import { formatCurrency } from '../utils/formatCurrency';
 import { getAll } from '../services/transactionService';
+import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import CategoryBadge from '../components/CategoryBadge';
 import EmptyState from '../components/EmptyState';
 
@@ -112,9 +113,28 @@ export default function TransactionListScreen({ navigation }) {
   // Loading
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Memuat data...</Text>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.headerRow}>
+            <Skeleton width={32} height={32} borderRadius={16} />
+            <Skeleton width={120} height={22} borderRadius={6} />
+          </View>
+          <Skeleton width={22} height={22} borderRadius={11} />
+        </View>
+        <View style={styles.searchWrapper}>
+          <Skeleton width="100%" height={44} borderRadius={12} />
+        </View>
+        <View style={styles.filterRow}>
+          <Skeleton width={70} height={34} borderRadius={20} />
+          <Skeleton width={80} height={34} borderRadius={20} />
+          <Skeleton width={70} height={34} borderRadius={20} />
+        </View>
+        <View style={styles.listContent}>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </View>
       </View>
     );
   }

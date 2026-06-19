@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SpendScan - Riwayat Transaksi</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#4d44e3",
+                      "on-primary-fixed-variant": "#3323cc",
+                      "inverse-surface": "#2e3132",
+                      "surface-variant": "#e1e3e4",
+                      "background": "#f8f9fa",
+                      "success": "#10B981",
+                      "outline": "#777587",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed": "#ffdbcc",
+                      "tertiary-fixed-dim": "#ffb695",
+                      "on-surface": "#191c1d",
+                      "on-primary-container": "#dad7ff",
+                      "on-tertiary-fixed-variant": "#7b2f00",
+                      "error-container": "#ffdad6",
+                      "surface-container-high": "#e7e8e9",
+                      "surface-container": "#edeeef",
+                      "primary-fixed": "#e2dfff",
+                      "inverse-on-surface": "#f0f1f2",
+                      "secondary-fixed": "#dce2f3",
+                      "primary": "#3525cd",
+                      "on-error": "#ffffff",
+                      "tertiary": "#7e3000",
+                      "on-secondary-container": "#5e6572",
+                      "on-primary-fixed": "#0f0069",
+                      "primary-container": "#4f46e5",
+                      "on-tertiary-container": "#ffd2be",
+                      "on-background": "#191c1d",
+                      "secondary-fixed-dim": "#c0c7d6",
+                      "surface": "#FFFFFF",
+                      "danger": "#EF4444",
+                      "outline-variant": "#c7c4d8",
+                      "on-primary": "#ffffff",
+                      "on-secondary-fixed": "#151c27",
+                      "border": "#E5E7EB",
+                      "surface-container-lowest": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-fixed": "#351000",
+                      "inverse-primary": "#c3c0ff",
+                      "secondary-container": "#dce2f3",
+                      "text-primary": "#111827",
+                      "tertiary-container": "#a44100",
+                      "surface-bright": "#f8f9fa",
+                      "primary-fixed-dim": "#c3c0ff",
+                      "surface-container-low": "#f3f4f5",
+                      "on-secondary-fixed-variant": "#404754",
+                      "on-surface-variant": "#464555",
+                      "surface-dim": "#d9dadb",
+                      "surface-container-highest": "#e1e3e4",
+                      "secondary": "#585f6c",
+                      "error": "#ba1a1a",
+                      "on-tertiary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "touch-target-min": "2.75rem",
+                      "stack-gap": "0.75rem",
+                      "container-margin": "1rem"
+              },
+              "fontFamily": {
+                      "body-md": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "headline-md": ["Manrope"],
+                      "display-idr": ["Manrope"],
+                      "financial-mono": ["Inter"],
+                      "headline-lg": ["Manrope"],
+                      "label-sm": ["Inter"]
+              },
+              "fontSize": {
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "display-idr": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "financial-mono": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        .transaction-card:active {
+            transform: scale(0.98);
+            background-color: #F3F4F5;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-container">
+<!-- Top AppBar -->
+<header class="bg-surface dark:bg-on-surface border-b border-border dark:border-outline-variant flex justify-between items-center px-container-margin h-14 w-full sticky top-0 z-50">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a young adult Indonesian male with a friendly smile, clean-cut look, wearing a minimalist navy blue polo shirt. The background is a soft, out-of-focus modern office interior with warm wooden textures and natural light-mode atmosphere, reinforcing a trustworthy fintech user profile aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5YaLUunjCYMdrPoCeYZpORlZ_hU8OROsmK0-BI-45dGFoHm-9JLBho1D70HXsheGtReYriVtflH3hFhztzc7frl4GIF0izjMXXI52PxPkSDpe67GRZmYr7L0ootwp0ittaDk2EYgYSA9QxmriEPRcwW6DTmxV8HYbfphgtTyhYQKBFLNcLrgwA2bL5Fs-k3mqbpaFUSGjRdm0Y5XeiS-hu8a4R9JZyLdKptMwBdSDL0ey5bBL6Gn7tidaYMvwJy4QYxYZj6WbvVg"/>
+</div>
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary dark:text-primary-fixed">SpendScan</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors duration-200">
+<span class="material-symbols-outlined text-on-surface-variant">calendar_month</span>
+</button>
+</div>
+</header>
+<main class="pb-24 pt-4 px-container-margin max-w-2xl mx-auto">
+<!-- Search and Filter Section -->
+<section class="mb-6 space-y-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all font-body-md text-on-surface" placeholder="Cari transaksi..." type="text"/>
+</div>
+<div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+<button class="px-4 py-2 bg-primary text-on-primary rounded-full font-label-sm whitespace-nowrap shadow-sm">Semua</button>
+<button class="px-4 py-2 bg-surface border border-border text-on-surface-variant rounded-full font-label-sm whitespace-nowrap hover:bg-surface-container transition-colors">Makanan</button>
+<button class="px-4 py-2 bg-surface border border-border text-on-surface-variant rounded-full font-label-sm whitespace-nowrap hover:bg-surface-container transition-colors">Belanja</button>
+<button class="px-4 py-2 bg-surface border border-border text-on-surface-variant rounded-full font-label-sm whitespace-nowrap hover:bg-surface-container transition-colors">Transport</button>
+<button class="px-4 py-2 bg-surface border border-border text-on-surface-variant rounded-full font-label-sm whitespace-nowrap hover:bg-surface-container transition-colors">Hiburan</button>
+</div>
+</section>
+<!-- Transaction Group: Today -->
+<section class="mb-8">
+<div class="flex justify-between items-center mb-3">
+<h2 class="font-headline-md text-headline-md text-on-surface-variant">Hari Ini</h2>
+<span class="text-label-sm text-outline">15 Juni 2026</span>
+</div>
+<div class="space-y-3">
+<!-- Transaction Item 1 -->
+<div class="transaction-card flex items-center p-4 bg-surface border border-border rounded-xl transition-all duration-150 cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+<div class="w-11 h-11 flex items-center justify-center rounded-full bg-primary-container text-on-primary-container mr-4">
+<span class="material-symbols-outlined">restaurant</span>
+</div>
+<div class="flex-1">
+<h3 class="font-financial-mono text-on-surface">Nasi Padang Pagi Sore</h3>
+<p class="text-body-md text-on-secondary-container">Makanan &amp; Minuman</p>
+</div>
+<div class="text-right">
+<p class="font-financial-mono text-danger">-Rp45.000</p>
+<span class="text-[10px] uppercase tracking-wider text-outline">MANUAL</span>
+</div>
+</div>
+<!-- Transaction Item 2 -->
+<div class="transaction-card flex items-center p-4 bg-surface border border-border rounded-xl transition-all duration-150 cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+<div class="w-11 h-11 flex items-center justify-center rounded-full bg-secondary-container text-on-secondary-container mr-4">
+<span class="material-symbols-outlined">shopping_bag</span>
+</div>
+<div class="flex-1">
+<h3 class="font-financial-mono text-on-surface">Indomaret Point</h3>
+<p class="text-body-md text-on-secondary-container">Belanja</p>
+</div>
+<div class="text-right">
+<p class="font-financial-mono text-danger">-Rp30.500</p>
+<span class="text-[10px] uppercase tracking-wider text-primary font-bold">OCR</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Transaction Group: Yesterday -->
+<section class="mb-8">
+<div class="flex justify-between items-center mb-3">
+<h2 class="font-headline-md text-headline-md text-on-surface-variant">Kemarin</h2>
+<span class="text-label-sm text-outline">14 Juni 2026</span>
+</div>
+<div class="space-y-3">
+<!-- Transaction Item 3 -->
+<div class="transaction-card flex items-center p-4 bg-surface border border-border rounded-xl transition-all duration-150 cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+<div class="w-11 h-11 flex items-center justify-center rounded-full bg-tertiary-container text-on-tertiary-container mr-4">
+<span class="material-symbols-outlined">commute</span>
+</div>
+<div class="flex-1">
+<h3 class="font-financial-mono text-on-surface">GrabRide ke Kantor</h3>
+<p class="text-body-md text-on-secondary-container">Transportasi</p>
+</div>
+<div class="text-right">
+<p class="font-financial-mono text-danger">-Rp18.000</p>
+<span class="text-[10px] uppercase tracking-wider text-outline">MANUAL</span>
+</div>
+</div>
+<!-- Transaction Item 4 -->
+<div class="transaction-card flex items-center p-4 bg-surface border border-border rounded-xl transition-all duration-150 cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+<div class="w-11 h-11 flex items-center justify-center rounded-full bg-primary-container text-on-primary-container mr-4">
+<span class="material-symbols-outlined">coffee</span>
+</div>
+<div class="flex-1">
+<h3 class="font-financial-mono text-on-surface">Kopi Kenangan</h3>
+<p class="text-body-md text-on-secondary-container">Makanan &amp; Minuman</p>
+</div>
+<div class="text-right">
+<p class="font-financial-mono text-danger">-Rp24.000</p>
+<span class="text-[10px] uppercase tracking-wider text-outline">MANUAL</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Earlier Group -->
+<section class="mb-8">
+<div class="flex justify-between items-center mb-3">
+<h2 class="font-headline-md text-headline-md text-on-surface-variant">Minggu Ini</h2>
+<span class="text-label-sm text-outline">10 - 13 Juni 2026</span>
+</div>
+<div class="space-y-3">
+<div class="transaction-card flex items-center p-4 bg-surface border border-border rounded-xl transition-all duration-150 cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+<div class="w-11 h-11 flex items-center justify-center rounded-full bg-secondary-container text-on-secondary-container mr-4">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<div class="flex-1">
+<h3 class="font-financial-mono text-on-surface">Tagihan Listrik PLN</h3>
+<p class="text-body-md text-on-secondary-container">Tagihan</p>
+</div>
+<div class="text-right">
+<p class="font-financial-mono text-danger">-Rp250.000</p>
+<span class="text-[10px] uppercase tracking-wider text-outline">MANUAL</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Empty State Visual Cue (for testing/reference) -->
+<!-- 
+        <div class="flex flex-col items-center justify-center py-12 text-center">
+            <div class="w-48 h-48 mb-6 bg-surface-container-low rounded-full flex items-center justify-center">
+                <span class="material-symbols-outlined text-6xl text-outline-variant">receipt_long</span>
+            </div>
+            <h3 class="font-headline-md text-headline-md text-on-surface">Belum ada transaksi</h3>
+            <p class="text-body-md text-on-surface-variant mt-2 max-w-xs">Mulai catat pengeluaran harian Anda secara manual atau scan struk belanja.</p>
+        </div>
+        -->
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="bg-surface dark:bg-on-surface border-t border-border dark:border-outline-variant fixed bottom-0 w-full z-50 flex justify-around items-center h-20 px-2 pb-safe">
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-on-secondary-fixed-variant hover:bg-surface-container dark:hover:bg-surface-container-highest transition-transform duration-150 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary text-on-primary-container dark:text-on-primary rounded-full px-4 py-1 transition-transform duration-150 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<span class="font-label-sm text-label-sm">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-on-secondary-fixed-variant hover:bg-surface-container dark:hover:bg-surface-container-highest transition-transform duration-150 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined">document_scanner</span>
+<span class="font-label-sm text-label-sm">Scan</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-on-secondary-fixed-variant hover:bg-surface-container dark:hover:bg-surface-container-highest transition-transform duration-150 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions for list items
+        document.querySelectorAll('.transaction-card').forEach(card => {
+            card.addEventListener('click', () => {
+                // Future navigation logic to TransactionDetailScreen.jsx
+                console.log('Opening details for transaction');
+            });
+        });
+
+        // Search highlight logic
+        const searchInput = document.querySelector('input');
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            document.querySelectorAll('.transaction-card').forEach(card => {
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                if (title.includes(query)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body></html>

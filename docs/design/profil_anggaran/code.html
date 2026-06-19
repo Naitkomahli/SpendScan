@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile &amp; Budget Settings - SpendScan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-highest": "#e1e3e4",
+                    "primary": "#3525cd",
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#d9dadb",
+                    "text-primary": "#111827",
+                    "on-tertiary-container": "#ffd2be",
+                    "on-primary-container": "#dad7ff",
+                    "outline-variant": "#c7c4d8",
+                    "on-error": "#ffffff",
+                    "surface-container-high": "#e7e8e9",
+                    "surface-container": "#edeeef",
+                    "surface-variant": "#e1e3e4",
+                    "primary-container": "#4f46e5",
+                    "secondary-fixed-dim": "#c0c7d6",
+                    "secondary": "#585f6c",
+                    "on-primary-fixed": "#0f0069",
+                    "inverse-primary": "#c3c0ff",
+                    "on-secondary-container": "#5e6572",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed-dim": "#c3c0ff",
+                    "tertiary-fixed-dim": "#ffb695",
+                    "on-surface-variant": "#464555",
+                    "secondary-container": "#dce2f3",
+                    "on-secondary-fixed": "#151c27",
+                    "tertiary-container": "#a44100",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-low": "#f3f4f5",
+                    "surface-bright": "#f8f9fa",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#7e3000",
+                    "on-surface": "#191c1d",
+                    "inverse-surface": "#2e3132",
+                    "surface": "#FFFFFF",
+                    "inverse-on-surface": "#f0f1f2",
+                    "error": "#ba1a1a",
+                    "danger": "#EF4444",
+                    "tertiary-fixed": "#ffdbcc",
+                    "surface-tint": "#4d44e3",
+                    "border": "#E5E7EB",
+                    "on-background": "#191c1d",
+                    "on-secondary-fixed-variant": "#404754",
+                    "primary-fixed": "#e2dfff",
+                    "on-tertiary-fixed-variant": "#7b2f00",
+                    "on-tertiary-fixed": "#351000",
+                    "secondary-fixed": "#dce2f3",
+                    "on-primary-fixed-variant": "#3323cc",
+                    "surface-container-lowest": "#ffffff",
+                    "background": "#f8f9fa",
+                    "outline": "#777587",
+                    "success": "#10B981",
+                    "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "container-margin": "1rem",
+                    "card-padding": "1rem",
+                    "touch-target-min": "2.75rem",
+                    "stack-gap": "0.75rem"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Manrope"],
+                    "financial-mono": ["Inter"],
+                    "display-idr": ["Manrope"],
+                    "label-sm": ["Inter"],
+                    "headline-lg": ["Manrope"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "financial-mono": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "display-idr": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f8f9fa;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .custom-toggle {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #3525cd;
+        }
+        .toggle-checkbox:checked + .toggle-label .toggle-dot {
+            transform: translateX(100%);
+        }
+        .bento-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .bento-card:active {
+            transform: scale(0.98);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-surface selection:bg-primary-fixed">
+<!-- Top App Bar -->
+<header class="bg-surface sticky top-0 z-50 border-b border-border flex justify-between items-center px-container-margin h-14 w-full">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional portrait of a modern finance user, shot in high-key lighting with a clean white background. The subject is a young adult with a friendly and trustworthy expression, embodying a minimalist and tech-savvy aesthetic. The visual style is crisp and high-definition, consistent with a premium financial application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDblMG5jwzyBVrtGx2QN3kj-eCHnzDrTK4iRz5x4inaUSjk0gb6nNOvWq1aoUpopfNTfP-k3_G33hCiYsNSa_41d4leh9-af9MEOW3l3qg2fM9wE6HlNIdwTQWvQdCkGmb7yXc768kGZ1cCPIWejJOE0stGJLiu--w33U9byjzw8NFxZ5FlbYFtXsjWz_04dvXKxM3QQQ_AA0K3dyY23HKsv-dbw1Sqxrut5V6OFyfFYoIyzv4y4nIQmcKVEIaA4Ylv2IP6jXYAXsE"/>
+</div>
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary">SpendScan</h1>
+</div>
+<button class="text-primary hover:bg-surface-container-low transition-colors duration-200 p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+</button>
+</header>
+<main class="max-w-md mx-auto pb-24 pt-6 px-container-margin space-y-stack-gap">
+<!-- Profile Section -->
+<section class="bg-surface rounded-xl border border-border p-card-padding flex flex-col items-center text-center">
+<div class="relative mb-4">
+<div class="w-24 h-24 rounded-full border-4 border-primary-fixed overflow-hidden shadow-sm">
+<img class="w-full h-full object-cover" data-alt="A close-up portrait of a professional individual against a soft-focus minimalist office backdrop. The lighting is natural and bright, creating a calm and secure atmosphere appropriate for a banking or financial utility app. The style is modern and clean, using a palette of whites and soft grays." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCp0XBC4ghB_XwJ9VGJcS84Kssqfh5_X7mhb4V7H5pHjAESuTJYXQAqmyHSJ0LUjeUDQZNARI2zxVAnaNIE0Gk2pL7Hv9VwA71CQVh_AKzrCvwo_StNwFwmzE54hvZTrjJKv_D1tGD0RSR7HA4yUt4c-nqKMbTtiJsy2cnENh_Lm1mKK_mZHdiYgQb0q-p1-4aPcZ3b5xuLvJgvNXAcQ0MiHsa2JslHeWlf9Wfby-_Clh9Lln70dhQc4f5L85C-gxEAPVEknIF5sps"/>
+</div>
+<button class="absolute bottom-0 right-0 bg-primary text-on-primary p-1.5 rounded-full border-2 border-surface flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+</div>
+<h2 class="font-headline-md text-headline-md text-text-primary">Alex Henderson</h2>
+<p class="font-body-md text-on-surface-variant">alex.henderson@example.com</p>
+</section>
+<!-- Budget Management Bento Grid -->
+<div class="grid grid-cols-2 gap-3">
+<div class="col-span-2 bg-surface rounded-xl border border-border p-card-padding">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-headline-md text-headline-md flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="account_balance_wallet">account_balance_wallet</span>
+                        Monthly Budget
+                    </h3>
+<span class="font-financial-mono text-primary bg-primary-fixed px-3 py-1 rounded-full">Rp 8.500.000</span>
+</div>
+<div class="space-y-4">
+<div class="w-full bg-surface-container-highest h-3 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[65%] rounded-full"></div>
+</div>
+<div class="flex justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span>Used: Rp 5.525.000</span>
+<span>Left: Rp 2.975.000</span>
+</div>
+</div>
+</div>
+<!-- Budget Control Toggles -->
+<div class="bg-surface rounded-xl border border-border p-card-padding flex flex-col justify-between">
+<div class="flex flex-col gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="notifications_active">notifications_active</span>
+<span class="font-body-md font-semibold">Overspend Alerts</span>
+</div>
+<div class="flex items-center mt-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only toggle-checkbox" type="checkbox"/>
+<div class="toggle-label w-10 h-5 bg-surface-container-highest rounded-full transition-colors duration-300">
+<div class="toggle-dot absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform duration-300 transform"></div>
+</div>
+</label>
+</div>
+</div>
+<div class="bg-surface rounded-xl border border-border p-card-padding flex flex-col justify-between">
+<div class="flex flex-col gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-body-md font-semibold">Smart Insights</span>
+</div>
+<div class="flex items-center mt-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only toggle-checkbox" type="checkbox"/>
+<div class="toggle-label w-10 h-5 bg-surface-container-highest rounded-full transition-colors duration-300">
+<div class="toggle-dot absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform duration-300 transform"></div>
+</div>
+</label>
+</div>
+</div>
+</div>
+<!-- Settings List -->
+<div class="bg-surface rounded-xl border border-border overflow-hidden">
+<div class="px-card-padding pt-card-padding pb-2 border-b border-border">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Account Management</h3>
+</div>
+<nav class="flex flex-col">
+<button class="flex items-center justify-between px-card-padding py-4 hover:bg-surface-container-low transition-colors border-b border-border group">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors" data-icon="security">security</span>
+<span class="font-body-lg text-text-primary">Security &amp; Privacy</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+</button>
+<button class="flex items-center justify-between px-card-padding py-4 hover:bg-surface-container-low transition-colors border-b border-border group">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors" data-icon="credit_card">credit_card</span>
+<span class="font-body-lg text-text-primary">Payment Methods</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+</button>
+<button class="flex items-center justify-between px-card-padding py-4 hover:bg-surface-container-low transition-colors border-b border-border group">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors" data-icon="language">language</span>
+<span class="font-body-lg text-text-primary">Language</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-body-md text-on-surface-variant">English</span>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+</div>
+</button>
+<button class="flex items-center justify-between px-card-padding py-4 hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors" data-icon="help">help</span>
+<span class="font-body-lg text-text-primary">Support Center</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+</button>
+</nav>
+</div>
+<!-- Danger Zone -->
+<div class="pt-2">
+<button class="w-full bg-surface-container-low hover:bg-error-container text-error font-body-lg py-4 rounded-xl transition-colors border border-border flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                Sign Out
+            </button>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface border-t border-border flex justify-around items-center h-20 px-2 pb-safe">
+<button class="flex flex-col items-center justify-center text-on-secondary-container hover:bg-surface-container transition-transform active:scale-90 duration-150 rounded-full px-4 py-1">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-secondary-container hover:bg-surface-container transition-transform active:scale-90 duration-150 rounded-full px-4 py-1">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-label-sm text-label-sm">History</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-secondary-container hover:bg-surface-container transition-transform active:scale-90 duration-150 rounded-full px-4 py-1">
+<span class="material-symbols-outlined" data-icon="document_scanner">document_scanner</span>
+<span class="font-label-sm text-label-sm">Scan</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container transition-transform active:scale-90 duration-150 rounded-full px-4 py-1">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</button>
+</nav>
+<script>
+        // Simple micro-interaction for toggles
+        document.querySelectorAll('.toggle-checkbox').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                const parent = this.closest('.bg-surface');
+                if(this.checked) {
+                    parent.style.borderColor = '#3525cd';
+                } else {
+                    parent.style.borderColor = '#E5E7EB';
+                }
+            });
+        });
+
+        // Ripples or hover states for list items
+        const listItems = document.querySelectorAll('nav button');
+        listItems.forEach(item => {
+            item.addEventListener('click', () => {
+                // Potential navigation logic
+            });
+        });
+    </script>
+</body></html>

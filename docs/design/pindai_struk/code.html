@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>SpendScan - Smart Receipt OCR</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Manrope:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .viewfinder-corner {
+            width: 40px;
+            height: 40px;
+            border-color: #FFFFFF;
+            position: absolute;
+        }
+        .scanning-line {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #4f46e5, transparent);
+            box-shadow: 0 0 15px #4f46e5;
+            position: absolute;
+            width: 100%;
+            top: 0;
+            animation: scanMove 3s infinite ease-in-out;
+            display: none;
+        }
+        @keyframes scanMove {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        .shutter-flash {
+            animation: flash 0.3s ease-out forwards;
+        }
+        @keyframes flash {
+            0% { background-color: rgba(255,255,255,0); }
+            50% { background-color: rgba(255,255,255,1); }
+            100% { background-color: rgba(255,255,255,0); }
+        }
+        .processing-pulse {
+            animation: pulse-ring 2s infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(79, 70, 229, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+        body { -webkit-tap-highlight-color: transparent; }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-highest": "#e1e3e4",
+                    "primary": "#3525cd",
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#d9dadb",
+                    "text-primary": "#111827",
+                    "on-tertiary-container": "#ffd2be",
+                    "on-primary-container": "#dad7ff",
+                    "outline-variant": "#c7c4d8",
+                    "on-error": "#ffffff",
+                    "surface-container-high": "#e7e8e9",
+                    "surface-container": "#edeeef",
+                    "surface-variant": "#e1e3e4",
+                    "primary-container": "#4f46e5",
+                    "secondary-fixed-dim": "#c0c7d6",
+                    "secondary": "#585f6c",
+                    "on-primary-fixed": "#0f0069",
+                    "inverse-primary": "#c3c0ff",
+                    "on-secondary-container": "#5e6572",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed-dim": "#c3c0ff",
+                    "tertiary-fixed-dim": "#ffb695",
+                    "on-surface-variant": "#464555",
+                    "secondary-container": "#dce2f3",
+                    "on-secondary-fixed": "#151c27",
+                    "tertiary-container": "#a44100",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-low": "#f3f4f5",
+                    "surface-bright": "#f8f9fa",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#7e3000",
+                    "on-surface": "#191c1d",
+                    "inverse-surface": "#2e3132",
+                    "surface": "#FFFFFF",
+                    "inverse-on-surface": "#f0f1f2",
+                    "error": "#ba1a1a",
+                    "danger": "#EF4444",
+                    "tertiary-fixed": "#ffdbcc",
+                    "surface-tint": "#4d44e3",
+                    "border": "#E5E7EB",
+                    "on-background": "#191c1d",
+                    "on-secondary-fixed-variant": "#404754",
+                    "primary-fixed": "#e2dfff",
+                    "on-tertiary-fixed-variant": "#7b2f00",
+                    "on-tertiary-fixed": "#351000",
+                    "secondary-fixed": "#dce2f3",
+                    "on-primary-fixed-variant": "#3323cc",
+                    "surface-container-lowest": "#ffffff",
+                    "background": "#f8f9fa",
+                    "outline": "#777587",
+                    "success": "#10B981",
+                    "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "container-margin": "1rem",
+                    "card-padding": "1rem",
+                    "touch-target-min": "2.75rem",
+                    "stack-gap": "0.75rem"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Manrope"],
+                    "financial-mono": ["Inter"],
+                    "display-idr": ["Manrope"],
+                    "label-sm": ["Inter"],
+                    "headline-lg": ["Manrope"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "financial-mono": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "display-idr": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary/20 overflow-hidden h-screen flex flex-col">
+<!-- Top AppBar - Suppressed because this is a focused task/transactional screen, 
+         but the user may need a back button to exit the camera. 
+         However, JSON provided a TopAppBar so we implement as a "Modal Header" -->
+<header class="flex justify-between items-center px-container-margin h-14 w-full bg-surface z-50">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors duration-200" onclick="window.history.back()">
+<span class="material-symbols-outlined text-on-surface">close</span>
+</button>
+<h1 class="font-headline-md text-headline-md text-on-surface">Scan Receipt</h1>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors duration-200">
+<span class="material-symbols-outlined text-on-surface">help_outline</span>
+</button>
+</header>
+<!-- Main Content Canvas: Viewfinder Area -->
+<main class="flex-grow relative overflow-hidden bg-black flex flex-col items-center justify-center">
+<!-- Camera Viewfinder Placeholder -->
+<div class="absolute inset-0 z-0">
+<div class="w-full h-full bg-cover bg-center opacity-80 transition-opacity duration-500" data-alt="A top-down realistic perspective of a paper merchant receipt lying on a dark wooden cafe table surface. The lighting is bright and natural from a nearby window, creating soft shadows. The scene is framed as if through a high-quality smartphone camera lens with a shallow depth of field, focusing on the crisp text of the receipt which shows financial line items and a total amount in a professional, minimalist fintech aesthetic." id="cameraFeed" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBJ58xgJmgrO864gryJlLNGl4Fy1C_x57MKfa4GAUk9heEnQVtp6WTemZUqtrhC9-yoh9wzARxE0oPoaWOWi4fDGX4zALWE47UeJuKYbMMJSUAFyI2_lc51iggKItEu8VH2rjQP7QVV03KujquzDamhM8tcgAgw2I3v9lXo8jSo2Xss42oVm5NPKoUEkfjJa3i_mgfCreTmTC_6svT48jB7Tdk1Whfc4JF6QZc3AfMjUx_5NbUzZEOLitogXGI50NcZ_umNiaVEw7g')"></div>
+</div>
+<!-- Shutter Flash Overlay -->
+<div class="absolute inset-0 z-40 pointer-events-none" id="flashOverlay"></div>
+<!-- UI Overlays -->
+<div class="relative z-10 w-full h-full flex flex-col items-center justify-between py-12 px-6 pointer-events-none">
+<!-- Instructions -->
+<div class="bg-black/60 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 transition-all duration-300" id="instructionBanner">
+<p class="text-white font-body-md flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">document_scanner</span>
+                    Place receipt in center
+                </p>
+</div>
+<!-- Viewfinder Frame -->
+<div class="w-full max-w-sm aspect-[3/4] relative border border-white/10 rounded-xl overflow-hidden">
+<div class="viewfinder-corner top-0 left-0 border-t-4 border-l-4 rounded-tl-xl"></div>
+<div class="viewfinder-corner top-0 right-0 border-t-4 border-r-4 rounded-tr-xl"></div>
+<div class="viewfinder-corner bottom-0 left-0 border-b-4 border-l-4 rounded-bl-xl"></div>
+<div class="viewfinder-corner bottom-0 right-0 border-b-4 border-r-4 rounded-br-xl"></div>
+<div class="scanning-line" id="scanningLine"></div>
+</div>
+<!-- Bottom Controls -->
+<div class="w-full max-w-sm flex items-center justify-between pointer-events-auto">
+<!-- Gallery Button -->
+<button class="w-14 h-14 rounded-full bg-black/40 backdrop-blur-lg border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-95">
+<span class="material-symbols-outlined">image</span>
+</button>
+<!-- Scan Trigger -->
+<button class="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center group active:scale-90 transition-transform duration-150" id="scanButton" onclick="startScanning()">
+<div class="w-16 h-16 rounded-full bg-white group-hover:scale-95 transition-transform"></div>
+</button>
+<!-- Flash Toggle -->
+<button class="w-14 h-14 rounded-full bg-black/40 backdrop-blur-lg border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-95">
+<span class="material-symbols-outlined">flash_auto</span>
+</button>
+</div>
+</div>
+<!-- Processing Overlay (Hidden by Default) -->
+<div class="absolute inset-0 z-50 bg-white/95 backdrop-blur-xl flex flex-col items-center justify-center hidden p-8 text-center" id="processingScreen">
+<div class="relative mb-8">
+<div class="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center processing-pulse">
+<span class="material-symbols-outlined text-primary text-[48px]">sync</span>
+</div>
+<div class="absolute -bottom-2 -right-2 bg-success text-white w-10 h-10 rounded-full flex items-center justify-center border-4 border-white">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-2">Analyzing Receipt</h2>
+<p class="font-body-md text-on-surface-variant max-w-[260px]">
+                Our OCR engine is extracting transaction details and merchant information...
+            </p>
+<div class="mt-12 w-full max-w-xs h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary w-0 transition-all duration-[3000ms] ease-out" id="progressBar"></div>
+</div>
+<div class="mt-4 flex flex-col gap-3 w-full max-w-xs">
+<div class="flex items-center gap-3 p-3 bg-surface rounded-lg border border-border">
+<span class="material-symbols-outlined text-primary">store</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Finding merchant...</span>
+</div>
+<div class="flex items-center gap-3 p-3 bg-surface rounded-lg border border-border opacity-50">
+<span class="material-symbols-outlined text-primary">receipt_long</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Parsing line items...</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Shell - Following JSON Structure -->
+<!-- active_navigation applied to "Scan" (index 2) -->
+<nav class="flex justify-around items-center h-20 w-full px-2 pb-safe bg-surface border-t border-border">
+<div class="flex flex-col items-center justify-center text-on-secondary-container transition-transform duration-150 scale-95 active:scale-90 cursor-pointer">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-secondary-container transition-transform duration-150 scale-95 active:scale-90 cursor-pointer">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-label-sm text-label-sm">History</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 transition-transform duration-150 scale-95 active:scale-90 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">document_scanner</span>
+<span class="font-label-sm text-label-sm">Scan</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-secondary-container transition-transform duration-150 scale-95 active:scale-90 cursor-pointer">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</div>
+</nav>
+<script>
+        function startScanning() {
+            const shutter = document.getElementById('scanButton');
+            const flash = document.getElementById('flashOverlay');
+            const processing = document.getElementById('processingScreen');
+            const camera = document.getElementById('cameraFeed');
+            const scanLine = document.getElementById('scanningLine');
+            const progress = document.getElementById('progressBar');
+            const instructions = document.getElementById('instructionBanner');
+
+            // 1. Shutter Animation
+            shutter.classList.add('scale-90');
+            flash.classList.add('shutter-flash');
+            
+            // 2. Hide instruction, start scanner line
+            instructions.style.opacity = '0';
+            scanLine.style.display = 'block';
+
+            setTimeout(() => {
+                // 3. Fade out camera, show processing
+                camera.style.opacity = '0';
+                processing.classList.remove('hidden');
+                processing.classList.add('flex');
+                
+                // 4. Progress bar animation
+                setTimeout(() => {
+                    progress.style.width = '100%';
+                }, 100);
+
+                // 5. Mock success navigation (After 4s)
+                setTimeout(() => {
+                    alert('Scan successful! Redirecting to transaction details...');
+                }, 4000);
+
+            }, 500);
+        }
+
+        // Handle micro-interactions for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => btn.classList.add('opacity-70'));
+            btn.addEventListener('touchend', () => btn.classList.remove('opacity-70'));
+        });
+    </script>
+</body></html>

@@ -192,7 +192,7 @@ export default function ScanScreen({ navigation }) {
           amount: item.amount,
           category: 'Food & Drink',
           transactionDate,
-          note: receiptImageUrl ? `OCR: ${ocrResult?.rawText || ''}`.substring(0, 200) : '',
+          note: receiptImageUrl ? `Scan: ${ocrResult?.rawText || ''}`.substring(0, 200) : '',
           source: 'ocr',
           type: 'expense',
         });
@@ -277,8 +277,8 @@ export default function ScanScreen({ navigation }) {
               <View style={styles.imageOverlay}>
                 <View style={styles.overlayGlass}>
                   <ActivityIndicator size="large" color="#fff" />
-                  <Text style={styles.overlayText}>Memproses OCR...</Text>
-                  <Text style={styles.overlaySubtext}>Membaca teks dari gambar</Text>
+                  <Text style={styles.overlayText}>Memproses struk...</Text>
+                  <Text style={styles.overlaySubtext}>Menganalisis dengan AI</Text>
                 </View>
               </View>
             )}
@@ -297,7 +297,7 @@ export default function ScanScreen({ navigation }) {
             </View>
           )}
 
-          {/* OCR Result — Items Review */}
+          {/* Scan Result — Items Review */}
           {isResultReady && (
             <View style={styles.section}>
               <View style={styles.resultCard}>
@@ -360,7 +360,7 @@ export default function ScanScreen({ navigation }) {
               >
                 <View style={styles.rawTextToggleLeft}>
                   <Ionicons name="code-slash" size={16} color={colors.textSecondary} />
-                  <Text style={styles.rawTextToggleLabel}>Lihat teks OCR mentah</Text>
+                  <Text style={styles.rawTextToggleLabel}>Lihat teks mentah</Text>
                 </View>
                 <Ionicons
                   name={showRawText ? 'chevron-up' : 'chevron-down'}

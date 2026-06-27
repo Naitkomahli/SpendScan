@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -20,6 +21,7 @@ export default function HomeScreen({ navigation }) {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   useFocusEffect(
@@ -38,7 +40,13 @@ export default function HomeScreen({ navigation }) {
       setError('Gagal memuat data. Ketuk untuk mencoba lagi.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }
+
+  function handleRefresh() {
+    setRefreshing(true);
+    fetchTransactions();
   }
 
   const now = new Date();
@@ -138,6 +146,9 @@ export default function HomeScreen({ navigation }) {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.primary]} tintColor={colors.primary} />
+        }
       >
         {/* Income & Expense Cards */}
         <View style={styles.summaryRow}>

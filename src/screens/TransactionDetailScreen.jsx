@@ -160,7 +160,6 @@ export default function TransactionDetailScreen({ route, navigation }) {
                 <Ionicons name="image-outline" size={28} color={colors.outline} />
               </View>
               <Text style={styles.receiptPlaceholderText}>Belum ada foto struk</Text>
-              <Text style={styles.receiptPlaceholderHint}>Ketuk untuk menambah lampiran</Text>
             </View>
           )}
         </View>

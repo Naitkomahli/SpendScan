@@ -67,10 +67,22 @@ Responsibilities:
 
 ### Backend
 - Node.js
-- Express.js
+- Express.js (v5)
 - Supabase/PostgreSQL
 - Supabase Storage
-- Tesseract.js for OCR
+- **Groq Vision** (`meta-llama/llama-4-scout-17b-16e-instruct`) for receipt OCR parsing
+  - Replaces Tesseract.js (removed in deployment refactor)
+  - Accepts base64 image directly, returns structured JSON (items, merchant, date)
+  - ~1-2s response time, well within Vercel 10s limit
+
+### Deployment
+- **Hosting:** Vercel (free Hobby plan, no credit card required)
+- **Production URL:** `https://backend-delta-sand-64.vercel.app`
+- **Framework:** Vercel Express preset (auto-wraps Express app, no `serverless-http` needed)
+- **No `api/` directory** — Vercel launches Express directly via `server.js`
+- **Config:** `backend/vercel.json` — route all requests `/(.*)` to Express
+- **Env vars:** 9 variables set via `vercel env add` (SUPABASE, JWT, Groq API keys)
+- **Deploy command:** `vercel --cwd backend --prod --yes --force`
 
 ## 5. Important Setup Notes
 
@@ -332,15 +344,14 @@ Error response:
 9. Add receipt upload and OCR flow.
 10. Polish UI and prepare portfolio/demo.
 
-## 15. Current Status From Prior Conversation
+## 15. Current Status
 
-Based on the transferred Claude chat context:
-- Project is named `SpendScan`.
-- Mobile stack decision is React Native + Expo.
-- Expo SDK 54 is preferred for this setup.
-- The user had already worked through project setup and dependency installation issues.
-- There were Windows folder permission issues in `Documents` and root `C:\Project`; safest path is `C:\Users\HP\Projects\SpendScan`.
-- The next practical coding step is to ensure folder structure exists, then create the base files and screens.
+- Backend deployed to Vercel (production): `https://backend-delta-sand-64.vercel.app`
+- Groq Vision replaces Tesseract.js: single-step base64 image → structured JSON
+- All 5 mobile app screens built (Home, Add, List, Detail, Edit)
+- Receipt scan flow with camera/gallery + Groq Vision parsing works end-to-end
+- Mobile app connects to Vercel backend (BASE_URL updated in `api.js`)
+- Next milestone: Build APK via `eas build --platform android`
 
 ## 16. AI Agent Behavior Rules
 
@@ -383,20 +394,18 @@ mkdir data
 mkdir constants
 mkdir utils
 cd ..
+
+# Deploy backend to Vercel
+vercel --cwd backend --prod --yes --force
+
+# Set environment variables on Vercel
+echo "value" | vercel env add VAR_NAME production --yes
 ```
 
 ## 18. What To Do Next
 
 Recommended next AI-assisted task:
 
-1. Check that `src/` folder structure exists.
-2. Create:
-   - `src/constants/colors.js`
-   - `src/constants/categories.js`
-   - `src/utils/formatCurrency.js`
-   - `src/data/mockTransactions.js`
-   - `src/services/transactionService.js`
-3. Create `src/navigation/AppNavigator.jsx`.
-4. Update `App.js` to render `<AppNavigator />`.
-5. Build `HomeScreen.jsx`.
-6. Continue to `AddTransactionScreen.jsx`.
+1. Build APK via `eas build --platform android`
+2. Rename Vercel project from `backend` to `spendscan-api` (or use custom domain)
+3. Polish UI and prepare for portfolio/demo

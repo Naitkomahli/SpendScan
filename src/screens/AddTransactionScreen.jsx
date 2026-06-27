@@ -250,12 +250,12 @@ export default function AddTransactionScreen({ route, navigation }) {
           )}
         </TouchableOpacity>
 
-        {/* OCR Option */}
-        <View style={styles.ocrSection}>
-          <Text style={styles.ocrHint}>Atau punya struk fisik?</Text>
-          <TouchableOpacity style={styles.ocrButton} onPress={() => navigation.navigate('ScanTab')} activeOpacity={0.7}>
+        {/* Scan Option */}
+        <View style={styles.scanSection}>
+          <Text style={styles.scanHint}>Atau punya struk fisik?</Text>
+          <TouchableOpacity style={styles.scanButton} onPress={() => navigation.navigate('ScanTab')} activeOpacity={0.7}>
             <Ionicons name="document-scanner-outline" size={20} color={colors.text} />
-            <Text style={styles.ocrButtonText}>Pindai Struk dengan OCR</Text>
+            <Text style={styles.scanButtonText}>Pindai Struk dengan Kamera</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -340,9 +340,9 @@ const styles = StyleSheet.create({
   saveButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 16, paddingVertical: 14, marginTop: 24 },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600', marginLeft: 8 },
 
-  // OCR
-  ocrSection: { alignItems: 'center', marginTop: 24 },
-  ocrHint: { fontSize: 14, color: colors.textSecondary, marginBottom: 12 },
-  ocrButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.secondaryContainer, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 24 },
-  ocrButtonText: { fontSize: 13, fontWeight: '600', color: colors.text, marginLeft: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  // Scan
+  scanSection: { alignItems: 'center', marginTop: 24 },
+  scanHint: { fontSize: 14, color: colors.textSecondary, marginBottom: 12 },
+  scanButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.secondaryContainer, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 24 },
+  scanButtonText: { fontSize: 13, fontWeight: '600', color: colors.text, marginLeft: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
 });

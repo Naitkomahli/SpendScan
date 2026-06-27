@@ -31,7 +31,7 @@ export default function TransactionCard({ transaction, onPress }) {
         <Text style={styles.title} numberOfLines={1}>
           {title}
         </Text>
-        <Text style={styles.date}>{category}</Text>
+        <Text style={styles.date}>{formattedDate}</Text>
       </View>
 
       <Text style={[styles.amount, isIncome && styles.amountIncome]}>

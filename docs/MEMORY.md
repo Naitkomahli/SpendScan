@@ -289,3 +289,60 @@ UPDATE transactions SET type = 'expense' WHERE type IS NULL;
 cd C:\Project\SpendScan
 npx expo start -c   # -c untuk clear cache
 ```
+
+---
+
+# Ringkasan Sesi — SpendScan (Sesi 7 & 8)
+
+**Tanggal:** 27 Juni 2026
+
+## Yang Selesai — OCR Flow + Portfolio Polish
+
+| Item | Detail |
+|------|--------|
+| **OCR Flow** | ✅ Full working: Kamera/Galeri → OCR → Groq AI parsing → review items → batch save |
+| **Item Review** | ✅ Edit nama/harga, hapus, tambah item manual |
+| **Batch Save** | ✅ Satu struk jadi multiple transaksi |
+| **LLM Integration** | ✅ Beralih dari Gemini ke Groq (Llama 3.3 70B) |
+| **Base64 Upload** | ✅ Hapus multer, ganti dengan JSON base64 |
+| **README.md** | ✅ Dokumentasi lengkap fitur, tech stack, cara install |
+| **.env.example** | ✅ Template environment variables |
+| **PRD.md** | ✅ Update 31 sections, tambah FR baru, roadmap final |
+| **Git Commit** | ✅ 31 files, +4086 baris, push ke GitHub |
+
+### File Baru
+
+| File | Deskripsi |
+|------|-----------|
+| `backend/src/services/llmParser.js` | Service panggil Groq AI untuk parsing struk |
+| `README.md` | Dokumentasi project |
+| `backend/.env.example` | Template environment |
+
+### File yang Diubah
+
+| File | Perubahan |
+|------|-----------|
+| `docs/PRD.md` | Update: tech stack, FR, data model, API contract, roadmap, next task |
+| `docs/MEMORY.md` | Update dokumentasi sesi |
+| `backend/.gitignore` | Tambah `*.traineddata` |
+| `backend/src/controllers/receiptController.js` | Ganti rule-based parser → LLM |
+| `backend/src/routes/receipts.js` | Hapus multer, pakai JSON |
+| `backend/src/server.js` | Limit JSON: `10mb` |
+| `backend/.env` | Tambah LLM configuration |
+| `src/services/transactionService.js` | Scan → base64 + items array |
+| `src/screens/ScanScreen.jsx` | Review items + edit/hapus/tambah modal |
+
+### Catatan Penting
+
+```env
+# Konfigurasi LLM aktif (Groq)
+LLM_API_KEY=gsk_...
+LLM_BASE_URL=https://api.groq.com/openai/v1
+LLM_MODEL=llama-3.3-70b-versatile
+```
+
+### Diperlukan
+
+1. **README.md screenshots** — Ambil screenshot dari HP, simpan di `docs/screenshots/`
+2. **Splash Screen + App Icon** — Masih bisa ditambahkan kapan saja
+3. **Deploy backend** — Agar bisa diakses tanpa `node src/server.js` manual

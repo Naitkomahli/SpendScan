@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-const BASE_URL = 'http://192.168.1.19:3000/api';
+const BASE_URL = 'https://backend-delta-sand-64.vercel.app/api';
 const TOKEN_KEY = 'authToken';
 
 export async function apiRequest(endpoint, options = {}) {

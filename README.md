@@ -53,8 +53,8 @@ Built with React Native (Expo SDK 54) + Node.js backend + Supabase database + Gr
 <table>
   <tr>
     <td><img src="docs/screenshots/dashboard.jpg" alt="Dashboard" width="200"/></td>
-    <td><img src="docs/screenshots/scan.jpg" alt="Scan" width="200"/></td>
-    <td><img src="docs/screenshots/items.jpg" alt="Items Review" width="200"/></td>
+    <td><img src="docs/screenshots/scan-awal1.jpg" alt="Scan" width="200"/></td>
+    <td><img src="docs/screenshots/scan-review1.jpg" alt="Items Review" width="200"/></td>
   </tr>
   <tr>
     <td align="center"><em>Dashboard</em></td>
@@ -64,7 +64,7 @@ Built with React Native (Expo SDK 54) + Node.js backend + Supabase database + Gr
   <tr>
     <td><img src="docs/screenshots/report.jpg" alt="Report" width="200"/></td>
     <td><img src="docs/screenshots/history.jpg" alt="History" width="200"/></td>
-    <td><img src="docs/screenshots/login.jpg" alt="Login" width="200"/></td>
+    <td><img src="docs/screenshots/login-register.jpeg" alt="Login" width="200"/></td>
   </tr>
   <tr>
     <td align="center"><em>Report</em></td>

@@ -1,7 +1,6 @@
-const Tesseract = require('tesseract.js');
 const { supabase } = require('../config/supabase');
 const { createError } = require('../middleware/errorHandler');
-const { parseReceiptText } = require('../services/llmParser');
+const { parseReceiptImage } = require('../services/llmParser');
 
 const MIME_EXT_MAP = {
   'image/jpeg': 'jpg',
@@ -50,25 +49,20 @@ async function scanFromBase64(req, res, next) {
       receiptImageUrl = urlData.publicUrl;
     }
 
-    // Run OCR
-    const { data: ocrData } = await Tesseract.recognize(buffer, 'eng+ind', {
-      logger: (info) => {
-        if (info.status === 'recognizing text') {
-          console.log(`OCR progress: ${Math.round(info.progress * 100)}%`);
-        }
-      },
-    });
-
-    const rawText = ocrData.text;
-    const parsed = await parseReceiptText(rawText);
+    // Parse receipt directly from image using Groq Vision
+    const parsed = await parseReceiptImage(image, mimeType);
 
     res.json({
       success: true,
       message: 'Receipt scanned successfully',
       data: {
         receiptImageUrl,
-        rawOcrText: rawText,
-        parsed,
+        rawOcrText: parsed.rawResponse || '',
+        parsed: {
+          items: parsed.items || [],
+          merchant: parsed.merchant || null,
+          transactionDate: parsed.transactionDate || null,
+        },
       },
     });
   } catch (err) {

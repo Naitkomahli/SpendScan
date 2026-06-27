@@ -48,7 +48,7 @@ async function getById(req, res, next) {
 
 async function create(req, res, next) {
   try {
-    const { title, amount, category, transactionDate, note, receiptImageUrl, rawOcrText, source } = req.body;
+    const { title, amount, category, transactionDate, note, receiptImageUrl, rawOcrText, source, type } = req.body;
 
     if (!title || !amount || !category || !transactionDate) {
       throw createError(400, 'Title, amount, category, and transactionDate are required');
@@ -66,6 +66,7 @@ async function create(req, res, next) {
         receipt_image_url: receiptImageUrl || null,
         raw_ocr_text: rawOcrText || null,
         source: source || 'manual',
+        type: type || 'expense',
       }])
       .select()
       .single();
@@ -85,7 +86,7 @@ async function create(req, res, next) {
 async function update(req, res, next) {
   try {
     const { id } = req.params;
-    const { title, amount, category, transactionDate, note, receiptImageUrl, rawOcrText } = req.body;
+    const { title, amount, category, transactionDate, note, receiptImageUrl, rawOcrText, type } = req.body;
 
     const { data: existing, error: fetchError } = await supabaseAdmin
       .from('transactions')
@@ -106,6 +107,7 @@ async function update(req, res, next) {
     if (note !== undefined) updates.note = note;
     if (receiptImageUrl !== undefined) updates.receipt_image_url = receiptImageUrl;
     if (rawOcrText !== undefined) updates.raw_ocr_text = rawOcrText;
+    if (type !== undefined) updates.type = type;
     updates.updated_at = new Date().toISOString();
 
     const { data, error } = await supabaseAdmin

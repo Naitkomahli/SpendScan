@@ -1,16 +1,57 @@
 const Tesseract = require('tesseract.js');
 const { supabase } = require('../config/supabase');
 const { createError } = require('../middleware/errorHandler');
+const { parseReceiptText } = require('../services/llmParser');
 
-async function scanReceipt(req, res, next) {
+const MIME_EXT_MAP = {
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/heic': 'jpg',
+  'image/heif': 'jpg',
+};
+
+async function scanFromBase64(req, res, next) {
   try {
-    if (!req.file) {
-      throw createError(400, 'Receipt image file is required');
+    const { image, imageType } = req.body;
+
+    if (!image) {
+      throw createError(400, 'Image data is required');
     }
 
-    const filePath = req.file.path;
+    const mimeType = imageType || 'image/jpeg';
+    if (!mimeType || !mimeType.startsWith('image')) {
+      throw createError(400, 'Only image files are allowed');
+    }
 
-    const { data: ocrData } = await Tesseract.recognize(filePath, 'eng+ind', {
+    const buffer = Buffer.from(image, 'base64');
+
+    if (buffer.length > 5 * 1024 * 1024) {
+      throw createError(400, 'Image size must be less than 5MB');
+    }
+
+    // Upload to Supabase Storage
+    const fileExt = MIME_EXT_MAP[mimeType] || 'jpg';
+    const fileName = `receipts/${req.user.id}/${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('receipts')
+      .upload(fileName, buffer, {
+        contentType: mimeType,
+        upsert: false,
+      });
+
+    let receiptImageUrl = null;
+    if (!uploadError) {
+      const { data: urlData } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(fileName);
+      receiptImageUrl = urlData.publicUrl;
+    }
+
+    // Run OCR
+    const { data: ocrData } = await Tesseract.recognize(buffer, 'eng+ind', {
       logger: (info) => {
         if (info.status === 'recognizing text') {
           console.log(`OCR progress: ${Math.round(info.progress * 100)}%`);
@@ -19,13 +60,13 @@ async function scanReceipt(req, res, next) {
     });
 
     const rawText = ocrData.text;
-
-    const parsed = parseReceiptText(rawText);
+    const parsed = await parseReceiptText(rawText);
 
     res.json({
       success: true,
       message: 'Receipt scanned successfully',
       data: {
+        receiptImageUrl,
         rawOcrText: rawText,
         parsed,
       },
@@ -35,60 +76,4 @@ async function scanReceipt(req, res, next) {
   }
 }
 
-async function uploadAndScan(req, res, next) {
-  try {
-    if (!req.file) {
-      throw createError(400, 'Receipt image file is required');
-    }
-
-    const fileExt = req.file.originalname.split('.').pop();
-    const fileName = `receipts/${req.user.id}/${Date.now()}.${fileExt}`;
-
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('receipts')
-      .upload(fileName, req.file.buffer, {
-        contentType: req.file.mimetype,
-        upsert: false,
-      });
-
-    if (uploadError) throw createError(500, uploadError.message);
-
-    const { data: urlData } = supabase.storage
-      .from('receipts')
-      .getPublicUrl(fileName);
-
-    const imageUrl = urlData.publicUrl;
-
-    const { data: ocrData } = await Tesseract.recognize(req.file.buffer, 'eng+ind');
-
-    const rawText = ocrData.text;
-    const parsed = parseReceiptText(rawText);
-
-    res.json({
-      success: true,
-      message: 'Receipt uploaded and scanned successfully',
-      data: {
-        receiptImageUrl: imageUrl,
-        rawOcrText: rawText,
-        parsed,
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-}
-
-function parseReceiptText(text) {
-  const lines = text.split('\n').filter((l) => l.trim());
-
-  const amountMatch = text.match(/[Tt]otal\s*:?\s*Rp?\s*([\d.,]+)/);
-  const dateMatch = text.match(/(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/);
-
-  const title = lines[0] || null;
-  const amount = amountMatch ? parseFloat(amountMatch[1].replace(/[.,]/g, '')) : null;
-  const transactionDate = dateMatch ? dateMatch[1] : null;
-
-  return { title, amount, transactionDate };
-}
-
-module.exports = { scanReceipt, uploadAndScan };
+module.exports = { scanFromBase64 };

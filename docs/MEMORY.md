@@ -116,3 +116,176 @@
 - Token JWT untuk user `orang@test.com` perlu diambil ulang via login di sesi berikutnya
 - Untuk menjalankan server: `cd backend && node src/server.js` (atau `node backend/src/server.js` dari root)
 - Memilih `expo-secure-store` untuk penyimpanan token (production-ready)
+
+---
+
+# Ringkasan Sesi — SpendScan (Sesi 4)
+
+**Tanggal:** 24 Juni 2026
+
+## Yang Selesai Hari Ini
+
+| Item | Detail |
+|------|--------|
+| **expo-secure-store** | ✅ Terinstal (v~15.0.8) |
+| **api.js** | ✅ File dibuat |
+| **authService.js** | ✅ File dibuat |
+| **AuthContext.js** | ✅ File dibuat |
+| **LoginScreen.jsx** | ✅ File dibuat |
+| **App.js** | ✅ Diupdate dengan AuthProvider |
+| **AppNavigator.jsx** | ✅ Diupdate dengan auth flow |
+| **transactionService.js** | ✅ Diupdate — panggil API backend |
+| **api.js** | ✅ Diupdate — dukungan FormData |
+| **ProfileScreen.jsx** | ✅ Diupdate — info user + logout |
+| **HomeScreen.jsx** | ✅ Diupdate — sapaan dengan nama user |
+
+### Langkah 1 ✅ — Install expo-secure-store
+- `npx expo install expo-secure-store` berhasil
+- Dependency ditambahkan ke `package.json`
+
+### Langkah 2 ✅ — Buat src/services/api.js
+- API client helper selesai dibuat
+- Fungsi `apiRequest(endpoint, options)` untuk semua panggilan fetch
+- Otomatis ambil token dari SecureStore & sisipkan header Authorization
+- Handle error response dari backend
+
+### Langkah 3 ✅ — Buat src/services/authService.js
+- Auth service selesai dibuat
+- Fungsi `login(email, password)` — POST /api/auth/login
+- Fungsi `register(name, email, password)` — POST /api/auth/register
+- Menggunakan `apiRequest` dari api.js
+
+### Langkah 4 ✅ — Buat src/contexts/AuthContext.js
+- Auth context dengan `AuthProvider` + `useAuth` hook
+- State: user, token, loading, isAuthenticated
+- Fungsi: login, register, logout
+- Otomatis simpan token & user ke SecureStore
+- Otomatis restore session saat app dibuka
+
+### Langkah 5 ✅ — Buat src/screens/LoginScreen.jsx
+- Form login dan register (toggle mode)
+- Validasi: email format, password min 6 karakter, nama wajib (register)
+- Show/hide password dengan icon eye
+- Memanggil `useAuth().login()` / `useAuth().register()`
+- Loading state + error handling dengan Alert
+
+### Langkah 6 ✅ — Update App.js
+- App.js dibungkus dengan `<AuthProvider>`
+- AuthProvider di level paling luar, NavigationContainer di dalamnya
+- Semua screen sekarang bisa akses `useAuth()`
+
+### Langkah 7 ✅ — Update AppNavigator.jsx
+- Import `useAuth` untuk cek status autentikasi
+- **Loading state**: tampilkan spinner saat cek token tersimpan
+- **Not authenticated**: tampilkan `LoginScreen`
+- **Authenticated**: tampilkan Bottom Tab Navigator
+- LoginScreen tidak perlu navigation — render ulang otomatis saat `isAuthenticated` berubah
+
+### Langkah 8 ✅ — Update transactionService.js (API Integration)
+- Semua fungsi sekarang panggil backend via `apiRequest`
+- **getAll** → `GET /api/transactions`
+- **getById** → `GET /api/transactions/:id`
+- **create** → `POST /api/transactions`
+- **update** → `PUT /api/transactions/:id`
+- **deleteById** → `DELETE /api/transactions/:id`
+- **scanReceipt** → `POST /api/receipts/scan` (multipart FormData)
+- Fungsi `fromSnakeCase()` mapping `transaction_date` → `transactionDate` dll
+- Screens tidak perlu diubah — nama fungsi tetap sama
+
+### Langkah 9 ✅ — Update ProfileScreen.jsx
+- Tampilkan avatar, nama, email dari `useAuth().user`
+- Informasi detail: Nama, Email, UID
+- Tombol **Keluar** dengan konfirmasi Alert
+- Versi app di bagian bawah
+
+### Langkah 10 ✅ — Update HomeScreen.jsx
+- Import `useAuth` untuk akses data user
+- Teks sambutan berubah dari "Halo, Selamat Pagi" → "Halo, {user.name}"
+
+## Semua Langkah Integrasi Selesai 🎉
+
+| Fase | Status |
+|------|--------|
+| Mock Data | ✅ Berfungsi |
+| Auth (Login/Register) | ✅ Terintegrasi |
+| Backend API | ✅ Terintegrasi |
+| Auth Flow | ✅ LoginScreen + Token + Logout |
+| Service Layer | ✅ API calls dengan field mapping |
+
+---
+
+# Ringkasan Sesi — SpendScan (Sesi 5)
+
+**Tanggal:** 25 Juni 2026
+
+## Yang Selesai Hari Ini — Dashboard Pemasukan & Pengeluaran
+
+| Item | Detail |
+|------|--------|
+| **Fix tombol** | Avatar → Profile, Laporan → History, Anggaran → Alert |
+| **type field** | Kolom `type` (income/expense) di model, service, backend |
+| **Toggle form** | Pemasukan / Pengeluaran di Add & Edit screen |
+| **Dashboard** | 2 kartu stats + saldo bersih + breakdown kategori |
+| **UI income** | Warna hijau, `+` sign, badge INCOME |
+| **Mock data** | Tambah 2 income: Gaji Rp5jt + Freelance Rp500rb |
+| **Database** | SQL migration: `ALTER TABLE transactions ADD COLUMN type` |
+
+### File yang Diubah (11 file)
+
+| File | Perubahan |
+|------|-----------|
+| `src/constants/categories.js` | Tambah `Pemasukan` + `EXPENSE_CATEGORIES` |
+| `src/data/mockTransactions.js` | Tambah field `type` + 2 data income |
+| `backend/src/controllers/transactionController.js` | Handle `type` di create & update |
+| `src/services/transactionService.js` | Mapping `type` di fromSnakeCase + payload |
+| `src/components/TransactionCard.jsx` | Warna + sign (+/−) berdasarkan type |
+| `src/screens/TransactionDetailScreen.jsx` | Badge tipe + warna amount |
+| `src/screens/TransactionListScreen.jsx` | Badge INCOME/EXPENSE |
+| `src/screens/AddTransactionScreen.jsx` | Toggle Pemasukan/Pengeluaran |
+| `src/screens/EditTransactionScreen.jsx` | Toggle Pemasukan/Pengeluaran |
+| `src/screens/HomeScreen.jsx` | Dashboard: income, expense, saldo, kategori |
+| `docs/MEMORY.md` | Update dokumentasi |
+
+### Catatan Penting
+
+⚠️ **Jalankan SQL migration di Supabase SQL Editor sebelum testing:**
+```sql
+ALTER TABLE transactions ADD COLUMN type VARCHAR(10) NOT NULL DEFAULT 'expense'
+CHECK (type IN ('income', 'expense'));
+UPDATE transactions SET type = 'expense' WHERE type IS NULL;
+```
+
+---
+
+# Ringkasan Sesi — SpendScan (Sesi 6)
+
+**Tanggal:** 25 Juni 2026
+
+## Yang Selesai Hari Ini — 5 Revisi UI + Laporan
+
+| Item | Detail |
+|------|--------|
+| **Tab Profile** | ❌ Dihapus dari navbar, Profile pindah ke HomeStack |
+| **Urutan tab** | Home (kiri) → Scan (tengah) → History (kanan) |
+| **ReportScreen** | 🆕 Halaman laporan dengan LineChart + ringkasan |
+| **Filter bulan** | Calendar di History bisa pilih bulan, tampil summary income/expense |
+| **Logo History** | Avatar person → icon receipt |
+| **Anggaran** | ❌ Dihapus dari dashboard |
+| **Line Chart Library** | `react-native-svg` + `react-native-chart-kit` terinstal |
+
+### Perubahan File (5 file)
+
+| File | Perubahan |
+|------|----------|
+| **🆕** `src/screens/ReportScreen.jsx` | Line chart per hari (income hijau, expense merah), summary bulan, breakdown kategori, month picker modal |
+| `src/navigation/AppNavigator.jsx` | Hapus ProfileTab, tab baru Home→Scan→History, tambah Report & Profile di HomeStack |
+| `src/screens/HomeScreen.jsx` | Laporan → Report, hapus Anggaran, avatar → Profile |
+| `src/screens/TransactionListScreen.jsx` | Avatar → logo receipt, calendar fungsional pilih bulan, summary income/expense per bulan |
+| `docs/MEMORY.md` | Update dokumentasi |
+
+### Yang perlu di-restart
+
+```bash
+cd C:\Project\SpendScan
+npx expo start -c   # -c untuk clear cache
+```

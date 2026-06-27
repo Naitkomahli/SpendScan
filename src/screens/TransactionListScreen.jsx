@@ -3,12 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   ActivityIndicator,
   RefreshControl,
   TextInput,
   TouchableOpacity,
   SectionList,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -19,6 +20,20 @@ import { getAll } from '../services/transactionService';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import CategoryBadge from '../components/CategoryBadge';
 import EmptyState from '../components/EmptyState';
+
+function getMonthOptions() {
+  const options = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    options.push({ value, label });
+  }
+  return options;
+}
+
+const MONTH_OPTIONS = getMonthOptions();
 
 function formatDateLabel(dateString) {
   if (!dateString) return '';
@@ -45,6 +60,11 @@ export default function TransactionListScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('Semua');
 
+  const now = new Date();
+  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       fetchTransactions();
@@ -69,8 +89,28 @@ export default function TransactionListScreen({ navigation }) {
     fetchTransactions();
   }
 
+  const monthSummary = useMemo(() => {
+    const monthTxs = transactions.filter((t) =>
+      t.transactionDate?.startsWith(selectedMonth)
+    );
+
+    const income = monthTxs
+      .filter((t) => t.type === 'income')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const expense = monthTxs
+      .filter((t) => t.type === 'expense')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    return { income, expense };
+  }, [transactions, selectedMonth]);
+
   const filtered = useMemo(() => {
     let filtered = transactions;
+
+    filtered = filtered.filter((t) =>
+      t.transactionDate?.startsWith(selectedMonth)
+    );
 
     if (activeFilter !== 'Semua') {
       filtered = filtered.filter((t) => t.category === activeFilter);
@@ -87,7 +127,7 @@ export default function TransactionListScreen({ navigation }) {
     }
 
     return filtered;
-  }, [transactions, activeFilter, searchQuery]);
+  }, [transactions, activeFilter, searchQuery, selectedMonth]);
 
   const sections = useMemo(() => {
     const groups = {};
@@ -109,6 +149,8 @@ export default function TransactionListScreen({ navigation }) {
 
     return sorted.map(([title, data]) => ({ title, data }));
   }, [filtered]);
+
+  const currentMonthLabel = MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label || selectedMonth;
 
   // Loading
   if (loading) {
@@ -155,14 +197,26 @@ export default function TransactionListScreen({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <View style={styles.avatarSmall}>
-            <Ionicons name="person" size={18} color={colors.primary} />
+          <View style={styles.logoSmall}>
+            <Ionicons name="receipt" size={18} color={colors.primary} />
           </View>
           <Text style={styles.headerTitle}>SpendScan</Text>
         </View>
-        <TouchableOpacity style={styles.calendarBtn}>
+        <TouchableOpacity style={styles.calendarBtn} onPress={() => setShowMonthPicker(true)}>
           <Ionicons name="calendar-outline" size={22} color={colors.textSecondary} />
         </TouchableOpacity>
+      </View>
+
+      {/* Month Summary */}
+      <View style={styles.monthSummary}>
+        <View style={styles.monthSummaryLeft}>
+          <Ionicons name="calendar" size={14} color={colors.textSecondary} />
+          <Text style={styles.monthSummaryText}>{currentMonthLabel}</Text>
+        </View>
+        <View style={styles.monthSummaryRight}>
+          <Text style={styles.monthSummaryIncome}>+{formatCurrency(monthSummary.income)}</Text>
+          <Text style={styles.monthSummaryExpense}>−{formatCurrency(monthSummary.expense)}</Text>
+        </View>
       </View>
 
       {/* Search */}
@@ -229,10 +283,12 @@ export default function TransactionListScreen({ navigation }) {
                 <Text style={styles.cardCategory}>{item.category}</Text>
               </View>
               <View style={styles.cardRight}>
-                <Text style={styles.cardAmount}>{formatCurrency(item.amount)}</Text>
-                <View style={[styles.sourceBadge, item.source === 'ocr' && styles.sourceBadgeOcr]}>
-                  <Text style={[styles.sourceText, item.source === 'ocr' && styles.sourceTextOcr]}>
-                    {item.source === 'ocr' ? 'OCR' : 'MANUAL'}
+                <Text style={[styles.cardAmount, item.type === 'income' && styles.cardAmountIncome]}>
+                  {item.type === 'income' ? '+' : '−'}{formatCurrency(item.amount)}
+                </Text>
+                <View style={[styles.typeBadge, item.type === 'income' ? styles.typeBadgeIncome : styles.typeBadgeExpense]}>
+                  <Text style={[styles.typeBadgeText, item.type === 'income' ? styles.typeBadgeTextIncome : styles.typeBadgeTextExpense]}>
+                    {item.type === 'income' ? 'INCOME' : 'EXPENSE'}
                   </Text>
                 </View>
               </View>
@@ -240,6 +296,40 @@ export default function TransactionListScreen({ navigation }) {
           )}
         />
       )}
+
+      {/* Month Picker Modal */}
+      <Modal visible={showMonthPicker} transparent animationType="fade">
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMonthPicker(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Pilih Bulan</Text>
+            <FlatList
+              data={MONTH_OPTIONS}
+              keyExtractor={(item) => item.value}
+              renderItem={({ item }) => {
+                const isActive = item.value === selectedMonth;
+                return (
+                  <TouchableOpacity
+                    style={[styles.modalItem, isActive && styles.modalItemActive]}
+                    onPress={() => {
+                      setSelectedMonth(item.value);
+                      setShowMonthPicker(false);
+                    }}
+                  >
+                    <Text style={[styles.modalItemText, isActive && styles.modalItemTextActive]}>
+                      {item.label}
+                    </Text>
+                    {isActive && <Ionicons name="checkmark" size={20} color={colors.primary} />}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -254,9 +344,26 @@ const styles = StyleSheet.create({
   // Header
   header: { backgroundColor: colors.surface, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 56, paddingBottom: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  avatarSmall: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surfaceContainerHigh },
+  logoSmall: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primaryContainer, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '700', color: colors.primary },
   calendarBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+
+  // Month Summary
+  monthSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  monthSummaryLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  monthSummaryText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  monthSummaryRight: { flexDirection: 'row', gap: 12 },
+  monthSummaryIncome: { fontSize: 12, fontWeight: '700', color: colors.success },
+  monthSummaryExpense: { fontSize: 12, fontWeight: '700', color: colors.danger },
 
   // Search
   searchWrapper: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
@@ -281,8 +388,20 @@ const styles = StyleSheet.create({
   cardCategory: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   cardRight: { alignItems: 'flex-end' },
   cardAmount: { fontSize: 14, fontWeight: '700', color: colors.danger },
-  sourceBadge: { marginTop: 4, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: colors.surfaceContainer },
-  sourceBadgeOcr: { backgroundColor: colors.primaryContainer },
-  sourceText: { fontSize: 9, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.5 },
-  sourceTextOcr: { color: colors.primary },
+  cardAmountIncome: { color: colors.success },
+  typeBadge: { marginTop: 4, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  typeBadgeExpense: { backgroundColor: colors.errorContainer },
+  typeBadgeIncome: { backgroundColor: colors.primaryContainer },
+  typeBadgeText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
+  typeBadgeTextExpense: { color: colors.error },
+  typeBadgeTextIncome: { color: colors.primary },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalContent: { backgroundColor: colors.surface, borderRadius: 16, padding: 24, width: '100%', maxWidth: 320, maxHeight: 320 },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: 16 },
+  modalItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
+  modalItemActive: { backgroundColor: colors.primaryContainer, borderRadius: 8 },
+  modalItemText: { fontSize: 15, color: colors.text, fontWeight: '500' },
+  modalItemTextActive: { color: colors.primary, fontWeight: '700' },
 });

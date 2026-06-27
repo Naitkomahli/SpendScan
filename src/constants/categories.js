@@ -7,4 +7,7 @@ export const CATEGORIES = [
   { id: '6', label: 'Education',       icon: '📚' },
   { id: '7', label: 'Entertainment',   icon: '🎮' },
   { id: '8', label: 'Other',           icon: '📦' },
+  { id: '9', label: 'Pemasukan',       icon: '💰' },
 ];
+
+export const EXPENSE_CATEGORIES = CATEGORIES.filter((c) => c.label !== 'Pemasukan');

@@ -111,8 +111,12 @@ export default function TransactionDetailScreen({ route, navigation }) {
           <View style={styles.heroAmountSection}>
             <Text style={styles.heroAmountLabel}>Jumlah Total</Text>
             <View style={styles.heroAmountRow}>
-              <Text style={styles.heroAmountPrefix}>Rp</Text>
-              <Text style={styles.heroAmountValue}>{formatCurrency(transaction.amount).replace('Rp', '')}</Text>
+              <Text style={[styles.heroAmountPrefix, transaction.type === 'income' && { color: colors.success }]}>
+                {transaction.type === 'income' ? '+Rp' : '−Rp'}
+              </Text>
+              <Text style={[styles.heroAmountValue, transaction.type === 'income' && { color: colors.success }]}>
+                {formatCurrency(transaction.amount).replace('Rp', '')}
+              </Text>
             </View>
           </View>
         </View>
@@ -126,10 +130,10 @@ export default function TransactionDetailScreen({ route, navigation }) {
           </View>
           <View style={styles.infoCard}>
             <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
-            <Text style={styles.infoLabel}>Sumber</Text>
+            <Text style={styles.infoLabel}>Tipe</Text>
             <View style={styles.sourceRow}>
-              <View style={[styles.sourceDot, { backgroundColor: transaction.source === 'ocr' ? colors.primary : colors.success }]} />
-              <Text style={styles.infoValue}>{transaction.source === 'ocr' ? 'OCR' : 'Manual'}</Text>
+              <View style={[styles.typeDot, { backgroundColor: transaction.type === 'income' ? colors.success : colors.danger }]} />
+              <Text style={styles.infoValue}>{transaction.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</Text>
             </View>
           </View>
         </View>
@@ -248,6 +252,7 @@ const styles = StyleSheet.create({
   infoValue: { fontSize: 14, fontWeight: '600', color: colors.text },
   sourceRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   sourceDot: { width: 8, height: 8, borderRadius: 4 },
+  typeDot: { width: 8, height: 8, borderRadius: 4 },
 
   // Note
   noteCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 16, marginBottom: 16 },

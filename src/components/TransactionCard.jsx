@@ -14,7 +14,8 @@ import CategoryBadge from './CategoryBadge';
 export default function TransactionCard({ transaction, onPress }) {
   if (!transaction) return null;
 
-  const { title, amount, category, transactionDate, source } = transaction;
+  const { title, amount, category, transactionDate, type } = transaction;
+  const isIncome = type === 'income';
 
   const formattedDate = formatDate(transactionDate);
 
@@ -33,7 +34,9 @@ export default function TransactionCard({ transaction, onPress }) {
         <Text style={styles.date}>{category}</Text>
       </View>
 
-      <Text style={styles.amount}>{formatCurrency(amount)}</Text>
+      <Text style={[styles.amount, isIncome && styles.amountIncome]}>
+        {isIncome ? '+' : '−'}{formatCurrency(amount)}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -81,5 +84,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.danger,
+  },
+  amountIncome: {
+    color: colors.success,
   },
 });

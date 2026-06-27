@@ -13,31 +13,32 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
-import { CATEGORIES } from '../constants/categories';
+import { EXPENSE_CATEGORIES } from '../constants/categories';
 import { getById, update } from '../services/transactionService';
+
+const INCOME_CATEGORY = 'Pemasukan';
 
 export default function EditTransactionScreen({ route, navigation }) {
   const { id } = route.params;
 
-  // --- State form ---
+  const [type, setType] = useState('expense');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [transactionDate, setTransactionDate] = useState('');
   const [note, setNote] = useState('');
 
-  // --- State UI ---
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const isIncome = type === 'income';
+  const accentColor = isIncome ? colors.success : colors.primary;
 
   useEffect(() => {
     loadTransaction();
   }, []);
 
-  /**
-   * Ambil data transaksi berdasarkan ID, lalu isi form.
-   */
   async function loadTransaction() {
     try {
       setLoading(true);
@@ -50,12 +51,12 @@ export default function EditTransactionScreen({ route, navigation }) {
         return;
       }
 
-      // Isi form dengan data yang ada
       setTitle(data.title || '');
       setAmount(String(data.amount || ''));
       setCategory(data.category || '');
       setTransactionDate(data.transactionDate || '');
       setNote(data.note || '');
+      setType(data.type || 'expense');
     } catch (err) {
       Alert.alert('Error', 'Gagal memuat data transaksi.', [
         { text: 'Kembali', onPress: () => navigation.goBack() },
@@ -65,9 +66,16 @@ export default function EditTransactionScreen({ route, navigation }) {
     }
   }
 
-  /**
-   * Validasi form sebelum update.
-   */
+  function handleTypePress(selectedType) {
+    setType(selectedType);
+    if (selectedType === 'income') {
+      setCategory(INCOME_CATEGORY);
+    } else {
+      setCategory('');
+    }
+    setErrors({});
+  }
+
   function validate() {
     const newErrors = {};
 
@@ -81,7 +89,7 @@ export default function EditTransactionScreen({ route, navigation }) {
       newErrors.amount = 'Jumlah harus angka positif';
     }
 
-    if (!category) {
+    if (!isIncome && !category) {
       newErrors.category = 'Pilih kategori';
     }
 
@@ -93,9 +101,6 @@ export default function EditTransactionScreen({ route, navigation }) {
     return Object.keys(newErrors).length === 0;
   }
 
-  /**
-   * Simpan perubahan transaksi.
-   */
   async function handleSave() {
     if (!validate()) return;
 
@@ -107,6 +112,7 @@ export default function EditTransactionScreen({ route, navigation }) {
         category,
         transactionDate,
         note: note.trim() || null,
+        type,
       });
 
       Alert.alert('Berhasil', 'Transaksi berhasil diperbarui.', [
@@ -122,7 +128,6 @@ export default function EditTransactionScreen({ route, navigation }) {
     }
   }
 
-  // --- Loading State ---
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -142,11 +147,35 @@ export default function EditTransactionScreen({ route, navigation }) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Type Toggle */}
+        <View style={styles.typeToggle}>
+          <TouchableOpacity
+            style={[styles.typeButton, type === 'income' && { backgroundColor: colors.success, borderColor: colors.success }]}
+            onPress={() => handleTypePress('income')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trending-up" size={16} color={type === 'income' ? '#fff' : colors.success} />
+            <Text style={[styles.typeButtonText, type === 'income' && styles.typeButtonTextActive]}>
+              Pemasukan
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.typeButton, type === 'expense' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+            onPress={() => handleTypePress('expense')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trending-down" size={16} color={type === 'expense' ? '#fff' : colors.primary} />
+            <Text style={[styles.typeButtonText, type === 'expense' && styles.typeButtonTextActive]}>
+              Pengeluaran
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* --- Judul --- */}
         <Text style={styles.label}>Judul</Text>
         <TextInput
           style={[styles.input, errors.title && styles.inputError]}
-          placeholder="Contoh: Makan Siang"
+          placeholder={isIncome ? 'Contoh: Gaji Bulanan' : 'Contoh: Makan Siang'}
           placeholderTextColor={colors.textSecondary}
           value={title}
           onChangeText={(text) => {
@@ -176,39 +205,48 @@ export default function EditTransactionScreen({ route, navigation }) {
 
         {/* --- Kategori --- */}
         <Text style={styles.label}>Kategori</Text>
-        <View style={styles.categoryGrid}>
-          {CATEGORIES.map((cat) => {
-            const isSelected = category === cat.label;
-            return (
-              <TouchableOpacity
-                key={cat.id}
-                style={[
-                  styles.categoryItem,
-                  isSelected && styles.categoryItemSelected,
-                ]}
-                onPress={() => {
-                  setCategory(cat.label);
-                  if (errors.category)
-                    setErrors((prev) => ({ ...prev, category: null }));
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                <Text
-                  style={[
-                    styles.categoryLabel,
-                    isSelected && styles.categoryLabelSelected,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-        {errors.category && (
-          <Text style={styles.errorText}>{errors.category}</Text>
+        {isIncome ? (
+          <View style={styles.incomeCategoryBox}>
+            <Text style={styles.incomeCategoryIcon}>💰</Text>
+            <Text style={styles.incomeCategoryLabel}>Pemasukan</Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.categoryGrid}>
+              {EXPENSE_CATEGORIES.map((cat) => {
+                const isSelected = category === cat.label;
+                return (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[
+                      styles.categoryItem,
+                      isSelected && styles.categoryItemSelected,
+                    ]}
+                    onPress={() => {
+                      setCategory(cat.label);
+                      if (errors.category)
+                        setErrors((prev) => ({ ...prev, category: null }));
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                    <Text
+                      style={[
+                        styles.categoryLabel,
+                        isSelected && styles.categoryLabelSelected,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {cat.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {errors.category && (
+              <Text style={styles.errorText}>{errors.category}</Text>
+            )}
+          </>
         )}
 
         {/* --- Tanggal --- */}
@@ -243,7 +281,7 @@ export default function EditTransactionScreen({ route, navigation }) {
 
         {/* --- Tombol Simpan --- */}
         <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          style={[styles.saveButton, { backgroundColor: accentColor }, saving && styles.saveButtonDisabled]}
           onPress={handleSave}
           disabled={saving}
           activeOpacity={0.8}
@@ -292,6 +330,36 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 32,
   },
+
+  // Type Toggle
+  typeToggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 8,
+  },
+  typeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  typeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  typeButtonTextActive: {
+    color: '#fff',
+  },
+
   label: {
     fontSize: 14,
     fontWeight: '600',
@@ -351,6 +419,19 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
+  incomeCategoryBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.success,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  incomeCategoryIcon: { fontSize: 20 },
+  incomeCategoryLabel: { fontSize: 16, fontWeight: '600', color: colors.success },
   noteInput: {
     minHeight: 80,
   },
@@ -358,7 +439,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
     borderRadius: 24,
     paddingVertical: 14,
     marginTop: 24,

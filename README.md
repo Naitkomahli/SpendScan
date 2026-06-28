@@ -202,6 +202,12 @@ eas login
 eas build --platform android --profile preview
 ```
 
+## 📚 More Info
+
+For a detailed technical explanation (how each feature works, data flow, glossary), see:
+
+➡️ **[docs/TECHNICAL.md](docs/TECHNICAL.md)**
+
 ---
 
 ## 📁 Project Structure
@@ -268,7 +274,8 @@ SpendScan/
 │   └── package.json
 ├── docs/
 │   ├── PRD.md
-│   ├── AGENTS.md
+│   ├── TECHNICAL.md            # Full technical overview
+│   ├── AGENTS.md               # AI assistant context
 │   └── screenshots/
 └── README.md
 ```

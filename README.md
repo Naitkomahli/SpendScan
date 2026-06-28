@@ -349,7 +349,7 @@ This project is for educational and portfolio purposes.
 
 ## 👤 Author
 
-**Orang A** — Mobile App Developer & Project Owner
+**Ilham Oktian Ramadhan** — Mobile App Developer & Project Owner
 
 ---
 

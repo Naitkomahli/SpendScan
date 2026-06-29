@@ -193,7 +193,6 @@ export default function ReportScreen() {
           </Text>
           <Text style={styles.overallSub}>Saldo seluruh akun</Text>
         </View>
-        </View>
 
         {/* Line Chart */}
         {!loading && (

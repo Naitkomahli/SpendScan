@@ -15,39 +15,30 @@
 - This `AGENTS.md` is a shorter operational guide for AI agents.
 - If this file and `docs/PRD.md` disagree, prioritize `docs/PRD.md` for product requirements, then ask the user before making major changes.
 
-## 3. Team Roles
+## 3. Roles
 
-### Orang A — Mobile App Developer
-This is **the user's role**. Treat the user as **Orang A**.
+This project is built by a **single developer** who handles both the mobile app and backend.
 
-Responsibilities:
-- Build the React Native + Expo mobile app.
-- Create all screens and navigation.
-- Build reusable UI components.
-- Use mock data first while the backend is not ready.
-- Keep API calls isolated in the service layer.
-- Integrate Orang B's backend API later by updating service files, not rewriting screens.
+### Developer
 
-Primary focus areas:
+The user is the sole developer of this project.
+
+Responsibilities across the full stack:
+- Build the React Native + Expo mobile app (all screens, components, navigation)
+- Build the backend API using Node.js + Express
+- Manage database using Supabase/PostgreSQL and file storage using Supabase Storage
+- Set up AI-powered receipt parsing using Groq Vision API
+- Deploy and maintain backend on Vercel
+- Keep API calls isolated in the service layer for easy maintenance
+
+Primary focus areas (mobile):
 - `App.js`
 - `src/screens/*`
 - `src/components/*`
 - `src/navigation/*`
 - `src/services/transactionService.js`
-- `src/data/mockTransactions.js`
 - `src/constants/*`
 - `src/utils/*`
-
-### Orang B — Backend Developer
-This is the collaborator's role.
-
-Responsibilities:
-- Build backend using Node.js + Express.
-- Manage database using Supabase/PostgreSQL.
-- Manage file storage using Supabase Storage.
-- Build OCR process using Tesseract.js.
-- Provide API endpoints for authentication, transactions, receipt upload, and OCR results.
-- Return predictable JSON responses for the mobile app.
 
 ## 4. Tech Stack
 
@@ -340,7 +331,7 @@ Error response:
 5. Build `AddTransactionScreen` with manual form.
 6. Build `TransactionListScreen` and `TransactionDetailScreen`.
 7. Build `EditTransactionScreen` and delete confirmation.
-8. Connect to Orang B's backend by replacing mock service calls with real API calls.
+8. Connect to backend by replacing mock service calls with real API calls.
 9. Add receipt upload and OCR flow.
 10. Polish UI and prepare portfolio/demo.
 
@@ -356,8 +347,8 @@ Error response:
 ## 16. AI Agent Behavior Rules
 
 When helping with this project:
-- Always remember the user is **Orang A / Mobile App Developer**.
-- Still understand the whole project, including Orang B's backend responsibilities.
+- Always remember the user is **Mobile App Developer**.
+- Still understand the whole project, including backend responsibilities.
 - Do not assume backend is ready unless the user says so.
 - Prefer mock data first.
 - When giving code, include exact file path.

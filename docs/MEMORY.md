@@ -112,7 +112,7 @@
 7. Update screens yang panggil service (passing token)
 
 ### Catatan
-- User adalah **Orang A** (Mobile App Developer) yang ingin belajar backend
+- User adalah **Mobile App Developer** yang ingin belajar backend
 - Token JWT untuk user `orang@test.com` perlu diambil ulang via login di sesi berikutnya
 - Untuk menjalankan server: `cd backend && node src/server.js` (atau `node backend/src/server.js` dari root)
 - Memilih `expo-secure-store` untuk penyimpanan token (production-ready)

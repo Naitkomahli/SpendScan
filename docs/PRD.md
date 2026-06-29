@@ -7,7 +7,7 @@
 **Platform:** Mobile App, Android-first for development/testing using Expo Go  
 **Primary User:** Individual users who want to track daily expenses and income manually or by scanning receipts.
 
-SpendScan is a mobile expense tracker that helps users record, view, edit, and manage daily spending and income. The MVP focuses on manual expense and income tracking with a financial dashboard, then expands to receipt scanning using OCR. The project is built collaboratively: Orang A handles the mobile app, while Orang B handles backend, database, storage, and OCR.
+SpendScan is a mobile expense tracker that helps users record, view, edit, and manage daily spending and income. The MVP focuses on manual expense and income tracking with a financial dashboard, then expands to receipt scanning using AI. The project is built by a single developer handling both mobile app and backend.
 
 ## 2. Background
 
@@ -25,7 +25,7 @@ Many people forget small daily expenses such as food, transport, snacks, bills, 
 ### Project Goals
 - Build a portfolio-ready mobile app project.
 - Practice React Native + Expo mobile development.
-- Practice real team collaboration between frontend/mobile and backend.
+- Practice full-stack mobile development (React Native + Node.js backend).
 - Keep the architecture clean by separating UI screens from service/API logic.
 
 ## 4. Non-Goals for MVP
@@ -43,29 +43,26 @@ These can be added later after the core app is stable.
 
 ## 5. Team and Responsibilities
 
-### Orang A — Mobile App Developer
-The user is **Orang A**.
+### Developer
 
-Responsibilities:
-- Create mobile app using React Native + Expo.
-- Build screen UI and navigation.
-- Build reusable UI components.
-- Use mock data while backend is not ready.
-- Integrate backend API from Orang B through service layer.
-- Ensure mobile app can run in Expo Go.
-- Prepare the mobile app for portfolio/demo.
+The user is the sole developer of this project. Responsibilities cover the full stack:
 
-### Orang B — Backend Developer
-The collaborator is **Orang B**.
+**Mobile App:**
+- Create mobile app using React Native + Expo
+- Build screen UI and navigation
+- Build reusable UI components
+- Use mock data while backend is not ready
+- Integrate backend API through service layer
+- Ensure mobile app can run in Expo Go
+- Prepare the mobile app for portfolio/demo
 
-Responsibilities:
-- Build REST API using Node.js + Express.
-- Design database schema in Supabase/PostgreSQL.
-- Handle authentication and user data.
-- Store receipt images in Supabase Storage.
-- Run OCR using Tesseract.js.
-- Return transaction and OCR data to mobile app.
-- Document API endpoints for Orang A.
+**Backend:**
+- Build REST API using Node.js + Express
+- Design database schema in Supabase/PostgreSQL
+- Handle authentication and user data
+- Store receipt images in Supabase Storage
+- Set up AI receipt parsing using Groq Vision
+- Return transaction and receipt scan data to mobile app
 
 ## 6. Tech Stack
 
@@ -922,7 +919,7 @@ A feature is considered done when:
 - Dark mode.
 - Better OCR parsing with category detection.
 
-## 24. Next Recommended Task for Orang A
+## 24. Next Recommended Task
 
 All core MVPs are completed. The next practical task is **Phase 13 — Portfolio Polish**:
 

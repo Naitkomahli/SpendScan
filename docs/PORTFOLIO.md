@@ -10,8 +10,7 @@
 **SpendScan** adalah mobile expense tracker berbasis React Native + Expo yang memungkinkan pengguna mencatat pemasukan/pengeluaran harian secara manual atau **langsung scan struk belanja** — AI (Groq Vision / Llama 4 Scout 17B) otomatis membaca item-item beserta harganya. Backend Node.js/Express di-deploy ke Vercel, database di Supabase PostgreSQL.
 
 - **Tujuan:** Membantu orang mencatat pengeluaran kecil sehari-hari yang sering terlewat
-- **Role Saya:** Full ownership mobile app (Orang A) — arsitektur, UI/UX, navigasi, integrasi API
-- **Kolaborator:** Orang B — backend API, database, AI integration, deployment
+- **Role Saya:** Full ownership (full-stack) — mobile app (React Native/Expo), backend API (Node.js/Express), database (Supabase), AI integration (Groq Vision), deployment (Vercel)
 
 ---
 

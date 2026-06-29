@@ -10,6 +10,7 @@ import {
   SectionList,
   Modal,
   FlatList,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -239,8 +240,8 @@ export default function TransactionListScreen({ navigation }) {
       </View>
 
       {/* Filter Chips */}
-      <View style={styles.filterRow}>
-        {['Semua', ...CATEGORIES.map((c) => c.label)].slice(0, 6).map((label) => {
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+        {['Semua', ...CATEGORIES.map((c) => c.label)].map((label) => {
           const isActive = activeFilter === label;
           return (
             <TouchableOpacity
@@ -255,7 +256,7 @@ export default function TransactionListScreen({ navigation }) {
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
 
       {/* List */}
       {sections.length === 0 ? (
@@ -376,7 +377,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, color: colors.text },
 
   // Filter
-  filterRow: { flexDirection: 'row', paddingHorizontal: 16, marginBottom: 12, gap: 8, overflow: 'scroll' },
+  filterRow: { flexDirection: 'row', paddingHorizontal: 16, marginBottom: 12, gap: 8 },
   filterChip: { paddingHorizontal: 14, paddingVertical: 8, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 20 },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   filterChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },

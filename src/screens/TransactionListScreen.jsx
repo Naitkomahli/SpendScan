@@ -240,7 +240,7 @@ export default function TransactionListScreen({ navigation }) {
       </View>
 
       {/* Filter Chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRowScroll} contentContainerStyle={styles.filterRowContent}>
         {['Semua', ...CATEGORIES.map((c) => c.label)].map((label) => {
           const isActive = activeFilter === label;
           return (
@@ -378,6 +378,8 @@ const styles = StyleSheet.create({
 
   // Filter
   filterRow: { flexDirection: 'row', paddingHorizontal: 16, marginBottom: 12, gap: 8 },
+  filterRowScroll: { marginBottom: 12 },
+  filterRowContent: { flexDirection: 'row', paddingHorizontal: 16, gap: 8 },
   filterChip: { paddingHorizontal: 14, paddingVertical: 8, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 20 },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   filterChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },

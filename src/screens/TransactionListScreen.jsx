@@ -240,22 +240,24 @@ export default function TransactionListScreen({ navigation }) {
       </View>
 
       {/* Filter Chips */}
-      <View style={styles.filterRow}>
-        {['Semua', ...CATEGORIES.map((c) => c.label)].map((label) => {
-          const isActive = activeFilter === label;
-          return (
-            <TouchableOpacity
-              key={label}
-              style={[styles.filterChip, isActive && styles.filterChipActive]}
-              onPress={() => setActiveFilter(label)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
-                {label === 'Food & Drink' ? 'Makanan' : label === 'Transportation' ? 'Transport' : label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={styles.filterWrapper}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+          {['Semua', ...CATEGORIES.map((c) => c.label)].map((label) => {
+            const isActive = activeFilter === label;
+            return (
+              <TouchableOpacity
+                key={label}
+                style={[styles.filterChip, isActive && styles.filterChipActive]}
+                onPress={() => setActiveFilter(label)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* List */}
@@ -377,7 +379,11 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, color: colors.text },
 
   // Filter
-  filterRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, marginBottom: 12, gap: 8 },
+  filterWrapper: { marginBottom: 12 },
+  filterRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 6, alignItems: 'center' },
+  filterChip: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16 },
+  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.3 },
   filterChip: { paddingHorizontal: 14, paddingVertical: 8, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 20 },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   filterChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },

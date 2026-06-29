@@ -19,22 +19,24 @@ import { CATEGORIES } from '../constants/categories';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-function getMonthOptions() {
-  const options = [];
-  const now = new Date();
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-    options.push({ value, label });
-  }
-  return options;
-}
-
-const MONTH_OPTIONS = getMonthOptions();
-
 function getDaysInMonth(year, month) {
   return new Date(year, month, 0).getDate();
+}
+
+function extractMonthOptions(transactions) {
+  const months = new Set();
+  transactions.forEach((t) => {
+    if (t.transactionDate) {
+      months.add(t.transactionDate.substring(0, 7));
+    }
+  });
+  const sorted = [...months].sort();
+  return sorted.map((value) => {
+    const [y, m] = value.split('-').map(Number);
+    const d = new Date(y, m - 1, 1);
+    const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    return { value, label };
+  });
 }
 
 export default function ReportScreen() {
@@ -42,8 +44,13 @@ export default function ReportScreen() {
   const [loading, setLoading] = useState(true);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
+  const monthOptions = useMemo(() => extractMonthOptions(transactions), [transactions]);
+
   const now = new Date();
-  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const defaultMonth = monthOptions.length > 0
+    ? monthOptions[monthOptions.length - 1].value
+    : currentMonth;
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
 
   useFocusEffect(
@@ -135,7 +142,7 @@ export default function ReportScreen() {
     };
   }, [transactions, selectedMonth]);
 
-  const currentMonthLabel = MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label || selectedMonth;
+  const currentMonthLabel = monthOptions.find((m) => m.value === selectedMonth)?.label || selectedMonth;
 
   const categoryColorMap = {
     'Food & Drink': '#EF4444',
@@ -272,7 +279,7 @@ export default function ReportScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Pilih Bulan</Text>
             <FlatList
-              data={MONTH_OPTIONS}
+              data={monthOptions}
               keyExtractor={(item) => item.value}
               renderItem={({ item }) => {
                 const isActive = item.value === selectedMonth;

@@ -21,20 +21,6 @@ import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import CategoryBadge from '../components/CategoryBadge';
 import EmptyState from '../components/EmptyState';
 
-function getMonthOptions() {
-  const options = [];
-  const now = new Date();
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-    options.push({ value, label });
-  }
-  return options;
-}
-
-const MONTH_OPTIONS = getMonthOptions();
-
 function formatDateLabel(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString + 'T00:00:00');
@@ -60,8 +46,27 @@ export default function TransactionListScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('Semua');
 
+  const monthOptions = useMemo(() => {
+    const months = new Set();
+    transactions.forEach((t) => {
+      if (t.transactionDate) {
+        months.add(t.transactionDate.substring(0, 7));
+      }
+    });
+    const sorted = [...months].sort();
+    return sorted.map((value) => {
+      const [y, m] = value.split('-').map(Number);
+      const d = new Date(y, m - 1, 1);
+      const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+      return { value, label };
+    });
+  }, [transactions]);
+
   const now = new Date();
-  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const defaultMonth = monthOptions.length > 0
+    ? monthOptions[monthOptions.length - 1].value
+    : currentMonth;
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
@@ -150,7 +155,7 @@ export default function TransactionListScreen({ navigation }) {
     return sorted.map(([title, data]) => ({ title, data }));
   }, [filtered]);
 
-  const currentMonthLabel = MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label || selectedMonth;
+  const currentMonthLabel = monthOptions.find((m) => m.value === selectedMonth)?.label || selectedMonth;
 
   // Loading
   if (loading) {
@@ -307,7 +312,7 @@ export default function TransactionListScreen({ navigation }) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Pilih Bulan</Text>
             <FlatList
-              data={MONTH_OPTIONS}
+              data={monthOptions}
               keyExtractor={(item) => item.value}
               renderItem={({ item }) => {
                 const isActive = item.value === selectedMonth;

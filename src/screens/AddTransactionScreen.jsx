@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../constants/colors';
 import { EXPENSE_CATEGORIES } from '../constants/categories';
 import { create } from '../services/transactionService';
@@ -20,18 +21,25 @@ const INCOME_CATEGORY = 'Pemasukan';
 
 export default function AddTransactionScreen({ route, navigation }) {
   const ocrData = route?.params?.ocrData;
+  const isOcrFlow = !!ocrData;
 
   const [type, setType] = useState('expense');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
-  const [transactionDate, setTransactionDate] = useState(
-    new Date().toISOString().split('T')[0]
-  );
+  const [transactionDate, setTransactionDate] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [source, setSource] = useState('manual');
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isOcrFlow) {
+        setTransactionDate(new Date().toISOString().split('T')[0]);
+      }
+    }, [isOcrFlow])
+  );
 
   const isIncome = type === 'income';
   const accentColor = isIncome ? colors.success : colors.primary;

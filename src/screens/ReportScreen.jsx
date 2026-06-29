@@ -142,6 +142,18 @@ export default function ReportScreen() {
     };
   }, [transactions, selectedMonth]);
 
+  const overallData = useMemo(() => {
+    const income = transactions
+      .filter((t) => t.type === 'income')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const expense = transactions
+      .filter((t) => t.type === 'expense')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    return { income, expense, balance: income - expense };
+  }, [transactions]);
+
   const currentMonthLabel = monthOptions.find((m) => m.value === selectedMonth)?.label || selectedMonth;
 
   const categoryColorMap = {
@@ -168,6 +180,29 @@ export default function ReportScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Total Saldo */}
+        <View style={styles.overallCard}>
+          <View style={styles.overallHeader}>
+            <View style={styles.overallIcon}>
+              <Ionicons name="wallet" size={18} color="#fff" />
+            </View>
+            <Text style={styles.overallLabel}>Total Saldo</Text>
+          </View>
+          <Text style={[styles.overallAmount, overallData.balance >= 0 ? styles.overallPositive : styles.overallNegative]}>
+            {formatCurrency(overallData.balance)}
+          </Text>
+          <Text style={styles.overallSub}>Saldo seluruh akun</Text>
+          <View style={styles.overallDetail}>
+            <Text style={styles.overallDetailItem}>
+              <Text style={styles.overallDetailPlus}>+{formatCurrency(overallData.income)}</Text> pemasukan
+            </Text>
+            <Text style={styles.overallDetailSpacer}>|</Text>
+            <Text style={styles.overallDetailItem}>
+              <Text style={styles.overallDetailMinus}>−{formatCurrency(overallData.expense)}</Text> pengeluaran
+            </Text>
+          </View>
+        </View>
+
         {/* Line Chart */}
         {!loading && (
           <View style={styles.chartCard}>
@@ -333,6 +368,26 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   monthText: { fontSize: 13, fontWeight: '600', color: colors.primary },
+
+  // Total Saldo
+  overallCard: {
+    backgroundColor: colors.primary,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+  },
+  overallHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  overallIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  overallLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 1 },
+  overallAmount: { fontSize: 32, fontWeight: '800', color: '#fff', marginBottom: 2 },
+  overallPositive: { color: '#fff' },
+  overallNegative: { color: 'rgba(255,200,200,0.95)' },
+  overallSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 12 },
+  overallDetail: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  overallDetailItem: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+  overallDetailPlus: { color: 'rgba(200,255,200,0.9)', fontWeight: '700' },
+  overallDetailMinus: { color: 'rgba(255,200,200,0.9)', fontWeight: '700' },
+  overallDetailSpacer: { color: 'rgba(255,255,255,0.3)' },
 
   // Chart
   chartCard: {

@@ -81,6 +81,18 @@ export default function HomeScreen({ navigation }) {
     return { income, expense, balance: income - expense, categoryBreakdown };
   }, [transactions, currentMonth]);
 
+  const overallData = useMemo(() => {
+    const income = transactions
+      .filter((t) => t.type === 'income')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const expense = transactions
+      .filter((t) => t.type === 'expense')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    return { income, expense, balance: income - expense };
+  }, [transactions]);
+
   const latestTransactions = useMemo(
     () =>
       [...transactions]
@@ -102,6 +114,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <Skeleton width="100%" height={140} borderRadius={20} style={{ marginBottom: 16 }} />
           <SkeletonSummaryCard />
           <View style={styles.actionGrid}>
             <Skeleton width="48%" height={80} borderRadius={12} />
@@ -150,6 +163,29 @@ export default function HomeScreen({ navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.primary]} tintColor={colors.primary} />
         }
       >
+        {/* Total Saldo */}
+        <View style={styles.overallCard}>
+          <View style={styles.overallHeader}>
+            <View style={styles.overallIcon}>
+              <Ionicons name="wallet" size={20} color="#fff" />
+            </View>
+            <Text style={styles.overallLabel}>Total Saldo</Text>
+          </View>
+          <Text style={[styles.overallAmount, overallData.balance >= 0 ? styles.overallPositive : styles.overallNegative]}>
+            {formatCurrency(overallData.balance)}
+          </Text>
+          <Text style={styles.overallSub}>Saldo seluruh akun</Text>
+          <View style={styles.overallDetail}>
+            <Text style={styles.overallDetailItem}>
+              <Text style={styles.overallDetailPlus}>+{formatCurrency(overallData.income)}</Text> pemasukan
+            </Text>
+            <Text style={styles.overallDetailSpacer}>|</Text>
+            <Text style={styles.overallDetailItem}>
+              <Text style={styles.overallDetailMinus}>−{formatCurrency(overallData.expense)}</Text> pengeluaran
+            </Text>
+          </View>
+        </View>
+
         {/* Income & Expense Cards */}
         <View style={styles.summaryRow}>
           <View style={[styles.summaryCard, styles.incomeCard]}>
@@ -279,6 +315,26 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
   summaryAmountIncome: { fontSize: 18, fontWeight: '700', color: colors.success },
   summaryAmountExpense: { fontSize: 18, fontWeight: '700', color: colors.danger },
+
+  // Total Saldo
+  overallCard: {
+    backgroundColor: colors.primary,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+  },
+  overallHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  overallIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  overallLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 1 },
+  overallAmount: { fontSize: 32, fontWeight: '800', color: '#fff', marginBottom: 2 },
+  overallPositive: { color: '#fff' },
+  overallNegative: { color: 'rgba(255,200,200,0.95)' },
+  overallSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 12 },
+  overallDetail: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  overallDetailItem: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+  overallDetailPlus: { color: 'rgba(200,255,200,0.9)', fontWeight: '700' },
+  overallDetailMinus: { color: 'rgba(255,200,200,0.9)', fontWeight: '700' },
+  overallDetailSpacer: { color: 'rgba(255,255,255,0.3)' },
 
   // Balance
   balanceCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, marginBottom: 16 },

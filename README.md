@@ -98,7 +98,7 @@ Built with React Native (Expo SDK 54) + Node.js backend + Supabase database + Gr
 
 Download the latest APK directly on your Android phone:
 
-[⬇️ Download SpendScan APK](https://expo.dev/artifacts/eas/ah0wFNU2FP6GXv10LL35gPPbThZXiDxkbnzMtAUnnLQ.apk)
+[⬇️ Download SpendScan APK](https://expo.dev/artifacts/eas/EkRE1PMFEeh3E-dSDh5_yK1FJvxegw9H2b4OnVOIEpI.apk)
 
 Or visit: `https://expo.dev/accounts/naitkomahli/projects/SpendScan/builds`
 
@@ -341,7 +341,7 @@ All responses follow `{ success: boolean, message: string, data: any }` format.
 Download the latest APK directly on your Android phone:
 
 ```text
-https://expo.dev/artifacts/eas/ah0wFNU2FP6GXv10LL35gPPbThZXiDxkbnzMtAUnnLQ.apk
+https://expo.dev/artifacts/eas/EkRE1PMFEeh3E-dSDh5_yK1FJvxegw9H2b4OnVOIEpI.apk
 ```
 
 Or visit: [Expo Builds Dashboard](https://expo.dev/accounts/naitkomahli/projects/SpendScan/builds)

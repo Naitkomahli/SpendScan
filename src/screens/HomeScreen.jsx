@@ -176,7 +176,6 @@ export default function HomeScreen({ navigation }) {
           </Text>
           <Text style={styles.overallSub}>Saldo seluruh akun</Text>
         </View>
-        </View>
 
         {/* Income & Expense Cards */}
         <View style={styles.summaryRow}>

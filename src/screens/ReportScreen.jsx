@@ -192,15 +192,7 @@ export default function ReportScreen() {
             {formatCurrency(overallData.balance)}
           </Text>
           <Text style={styles.overallSub}>Saldo seluruh akun</Text>
-          <View style={styles.overallDetail}>
-            <Text style={styles.overallDetailItem}>
-              <Text style={styles.overallDetailPlus}>+{formatCurrency(overallData.income)}</Text> pemasukan
-            </Text>
-            <Text style={styles.overallDetailSpacer}>|</Text>
-            <Text style={styles.overallDetailItem}>
-              <Text style={styles.overallDetailMinus}>−{formatCurrency(overallData.expense)}</Text> pengeluaran
-            </Text>
-          </View>
+        </View>
         </View>
 
         {/* Line Chart */}
@@ -382,12 +374,7 @@ const styles = StyleSheet.create({
   overallAmount: { fontSize: 32, fontWeight: '800', color: '#fff', marginBottom: 2 },
   overallPositive: { color: '#fff' },
   overallNegative: { color: 'rgba(255,200,200,0.95)' },
-  overallSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 12 },
-  overallDetail: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  overallDetailItem: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
-  overallDetailPlus: { color: 'rgba(200,255,200,0.9)', fontWeight: '700' },
-  overallDetailMinus: { color: 'rgba(255,200,200,0.9)', fontWeight: '700' },
-  overallDetailSpacer: { color: 'rgba(255,255,255,0.3)' },
+  overallSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
 
   // Chart
   chartCard: {

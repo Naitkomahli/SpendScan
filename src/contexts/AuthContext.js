@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { login as apiLogin, register as apiRegister } from '../services/authService';
+import { setUnauthorizedHandler } from '../services/api';
 
 const TOKEN_KEY = 'authToken';
 const USER_KEY = 'authUser';
@@ -11,10 +12,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadStoredAuth();
-  }, []);
 
   async function loadStoredAuth() {
     try {
@@ -61,6 +58,11 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
   }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(logout);
+    loadStoredAuth();
+  }, [logout]);
 
   return (
     <AuthContext.Provider

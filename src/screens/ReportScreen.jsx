@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../constants/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency } from '../utils/formatCurrency';
 import { getAll } from '../services/transactionService';
 import { CATEGORIES } from '../constants/categories';
@@ -40,6 +41,7 @@ function extractMonthOptions(transactions) {
 }
 
 export default function ReportScreen() {
+  const insets = useSafeAreaInsets();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
@@ -157,20 +159,16 @@ export default function ReportScreen() {
   const currentMonthLabel = monthOptions.find((m) => m.value === selectedMonth)?.label || selectedMonth;
 
   const categoryColorMap = {
-    'Food & Drink': '#EF4444',
-    'Transportation': '#3B82F6',
-    'Shopping': '#8B5CF6',
-    'Bills': '#F59E0B',
-    'Health': '#10B981',
-    'Education': '#6366F1',
-    'Entertainment': '#EC4899',
-    'Other': '#6B7280',
+    Pokok: '#2F6B4F',
+    'Foya-foya': '#D4A94F',
+    'Tabungan Wajib': '#1A4633',
+    Pemasukan: '#3FA66B',
   };
 
   return (
     <View style={styles.container}>
       {/* Header with Month Selector */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.headerTitle}>Laporan Keuangan</Text>
         <TouchableOpacity style={styles.monthSelector} onPress={() => setShowMonthPicker(true)}>
           <Ionicons name="calendar-outline" size={18} color={colors.primary} />
@@ -243,15 +241,15 @@ export default function ReportScreen() {
 
         {/* Summary Cards */}
         <View style={styles.summaryRow}>
-          <View style={[styles.summaryCard, { backgroundColor: '#F0FDF4' }]}>
+          <View style={[styles.summaryCard, { backgroundColor: colors.incomeContainer }]}>
             <Text style={styles.summaryLabel}>Pemasukan</Text>
-            <Text style={[styles.summaryAmount, { color: colors.success }]}>
+            <Text style={[styles.summaryAmount, { color: colors.incomeText }]}>
               {formatCurrency(monthData.income)}
             </Text>
           </View>
-          <View style={[styles.summaryCard, { backgroundColor: '#FEF2F2' }]}>
+          <View style={[styles.summaryCard, { backgroundColor: colors.expenseContainer }]}>
             <Text style={styles.summaryLabel}>Pengeluaran</Text>
-            <Text style={[styles.summaryAmount, { color: colors.danger }]}>
+            <Text style={[styles.summaryAmount, { color: colors.expenseText }]}>
               {formatCurrency(monthData.expense)}
             </Text>
           </View>
@@ -339,7 +337,6 @@ const styles = StyleSheet.create({
   // Header
   header: {
     backgroundColor: colors.surface,
-    paddingTop: 56,
     paddingBottom: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
@@ -372,8 +369,8 @@ const styles = StyleSheet.create({
   overallLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 1 },
   overallAmount: { fontSize: 32, fontWeight: '800', color: '#fff', marginBottom: 2 },
   overallPositive: { color: '#fff' },
-  overallNegative: { color: 'rgba(255,200,200,0.95)' },
-  overallSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
+  overallNegative: { color: colors.expenseContainer },
+  overallSub: { fontSize: 12, color: '#ffffffb3' },
 
   // Chart
   chartCard: {

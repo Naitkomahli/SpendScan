@@ -3,6 +3,12 @@ import * as SecureStore from 'expo-secure-store';
 const BASE_URL = 'https://backend-delta-sand-64.vercel.app/api';
 const TOKEN_KEY = 'authToken';
 
+let unauthorizedHandler = null;
+
+export function setUnauthorizedHandler(fn) {
+  unauthorizedHandler = fn;
+}
+
 export async function apiRequest(endpoint, options = {}) {
   const token = await SecureStore.getItemAsync(TOKEN_KEY);
 
@@ -18,6 +24,11 @@ export async function apiRequest(endpoint, options = {}) {
     ...options,
     headers,
   });
+
+  if (response.status === 401) {
+    if (unauthorizedHandler) await unauthorizedHandler();
+    throw new Error('Sesi berakhir. Silakan login ulang.');
+  }
 
   const json = await response.json();
 

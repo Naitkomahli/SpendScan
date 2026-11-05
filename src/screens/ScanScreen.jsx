@@ -17,10 +17,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../constants/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency } from '../utils/formatCurrency';
 import { scanReceipt, create as createTransaction } from '../services/transactionService';
 
 export default function ScanScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [ocrResult, setOcrResult] = useState(null);
@@ -68,7 +70,7 @@ export default function ScanScreen({ navigation }) {
     try {
       const options = {
         mediaTypes: ['images'],
-        quality: 0.8,
+        quality: 0.5,
       };
 
       const result = type === 'camera'
@@ -101,30 +103,6 @@ export default function ScanScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  }
-
-  function handleSaveTransaction() {
-    if (!ocrResult) return;
-
-    const parsed = ocrResult.parsed || {};
-    const categoryMatch = CATEGORIES.find((c) =>
-      parsed.category && c.label.toLowerCase().includes(parsed.category.toLowerCase())
-    );
-
-    const ocrData = {
-      title: parsed.title || '',
-      amount: parsed.amount ? String(parsed.amount) : '',
-      transactionDate: parsed.transactionDate || new Date().toISOString().split('T')[0],
-      category: categoryMatch?.label || 'Other',
-      note: ocrResult.rawText || '',
-      type: 'expense',
-      receiptImageUrl: ocrResult.imageUrl || '',
-    };
-
-    navigation.navigate('HomeTab', {
-      screen: 'AddTransaction',
-      params: { ocrData },
-    });
   }
 
   function handleReset() {
@@ -190,7 +168,7 @@ export default function ScanScreen({ navigation }) {
         await createTransaction({
           title: item.name,
           amount: item.amount,
-          category: 'Food & Drink',
+          category: 'Pokok',
           transactionDate,
           note: receiptImageUrl ? `Scan: ${ocrResult?.rawText || ''}`.substring(0, 200) : '',
           source: 'ocr',
@@ -243,7 +221,10 @@ export default function ScanScreen({ navigation }) {
       ) : (
         // ── Has Image State ──────────────────────────────────────
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + 20 },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -637,7 +618,6 @@ const styles = StyleSheet.create({
   // ── Scrollable Content ─────────────────────────────────────────
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 60,
     paddingBottom: 40,
   },
 

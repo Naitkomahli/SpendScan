@@ -12,14 +12,20 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../constants/colors';
 import { formatCurrency } from '../utils/formatCurrency';
 import { getAll } from '../services/transactionService';
+import { getPockets } from '../services/pocketService';
+import { POCKETS } from '../constants/pockets';
+import PocketCard from '../components/PocketCard';
 import { useAuth } from '../contexts/AuthContext';
 import TransactionCard from '../components/TransactionCard';
 import EmptyState from '../components/EmptyState';
 import { Skeleton, SkeletonSummaryCard, SkeletonCard } from '../components/Skeleton';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen({ navigation }) {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [transactions, setTransactions] = useState([]);
+  const [pocketAllocations, setPocketAllocations] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -34,8 +40,9 @@ export default function HomeScreen({ navigation }) {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAll();
+      const [data, savedPockets] = await Promise.all([getAll(), getPockets()]);
       setTransactions(data);
+      setPocketAllocations(savedPockets || {});
     } catch (err) {
       setError('Gagal memuat data. Ketuk untuk mencoba lagi.');
     } finally {
@@ -78,7 +85,13 @@ export default function HomeScreen({ navigation }) {
       }, [])
       .sort((a, b) => b.total - a.total);
 
-    return { income, expense, balance: income - expense, categoryBreakdown };
+    const pocketSpent = {
+      pokok: monthTxs.filter((t) => t.type === 'expense' && t.category === 'Pokok').reduce((s, t) => s + Number(t.amount), 0),
+      foya: monthTxs.filter((t) => t.type === 'expense' && t.category === 'Foya-foya').reduce((s, t) => s + Number(t.amount), 0),
+      wajib: monthTxs.filter((t) => t.type === 'expense' && t.category === 'Tabungan Wajib').reduce((s, t) => s + Number(t.amount), 0),
+    };
+
+    return { income, expense, balance: income - expense, categoryBreakdown, pocketSpent };
   }, [transactions, currentMonth]);
 
   const overallData = useMemo(() => {
@@ -144,7 +157,7 @@ export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.greeting}>Halo, {user?.name || 'Pengguna'}</Text>
@@ -176,6 +189,23 @@ export default function HomeScreen({ navigation }) {
           </Text>
           <Text style={styles.overallSub}>Saldo seluruh akun</Text>
         </View>
+
+        {/* Kantong Tabungan */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Kantong Tabungan</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Allocate')}>
+            <Text style={styles.seeAll}>Bagi Saldo</Text>
+          </TouchableOpacity>
+        </View>
+
+        {POCKETS.map((p) => (
+          <PocketCard
+            key={p.key}
+            pocket={p}
+            allocated={pocketAllocations?.[p.key]?.allocated || 0}
+            spent={monthData?.pocketSpent?.[p.key] || 0}
+          />
+        ))}
 
         {/* Income & Expense Cards */}
         <View style={styles.summaryRow}>
@@ -290,7 +320,7 @@ const styles = StyleSheet.create({
   retryButtonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 
   // Header
-  header: { backgroundColor: colors.surface, paddingTop: 56, paddingBottom: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
+  header: { backgroundColor: colors.surface, paddingBottom: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   greeting: { fontSize: 14, color: colors.textSecondary },
   headerTitle: { fontSize: 22, fontWeight: '700', color: colors.text, marginTop: 2 },
@@ -301,8 +331,8 @@ const styles = StyleSheet.create({
   // Income & Expense Summary
   summaryRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
   summaryCard: { flex: 1, borderRadius: 16, padding: 16 },
-  incomeCard: { backgroundColor: '#F0FDF4' },
-  expenseCard: { backgroundColor: '#FEF2F2' },
+  incomeCard: { backgroundColor: colors.incomeContainer },
+  expenseCard: { backgroundColor: colors.expenseContainer },
   summaryLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
   summaryAmountIncome: { fontSize: 18, fontWeight: '700', color: colors.success },
   summaryAmountExpense: { fontSize: 18, fontWeight: '700', color: colors.danger },
@@ -319,8 +349,8 @@ const styles = StyleSheet.create({
   overallLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 1 },
   overallAmount: { fontSize: 32, fontWeight: '800', color: '#fff', marginBottom: 2 },
   overallPositive: { color: '#fff' },
-  overallNegative: { color: 'rgba(255,200,200,0.95)' },
-  overallSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
+  overallNegative: { color: colors.expenseContainer },
+  overallSub: { fontSize: 12, color: '#ffffffb3' },
 
   // Balance
   balanceCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, marginBottom: 16 },

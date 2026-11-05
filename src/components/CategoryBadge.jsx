@@ -7,7 +7,7 @@ import { colors } from '../constants/colors';
  * CategoryBadge — menampilkan icon kategori dalam bulatan.
  *
  * Props:
- * - category: string (nama kategori, misal "Food & Drink")
+ * - category: string (nama kategori, misal "Pokok")
  * - size: 'sm' | 'md' (optional, default 'md')
  */
 export default function CategoryBadge({ category, size = 'md' }) {
@@ -23,10 +23,10 @@ export default function CategoryBadge({ category, size = 'md' }) {
     <View
       style={[
         styles.badge,
-        { width: dimension, height: dimension, borderRadius: dimension / 2 },
+        { width: dimension, height: dimension, borderRadius: dimension / 2, backgroundColor: found?.color ? found.color : colors.border },
       ]}
     >
-      <Text style={[styles.icon, { fontSize: dimension * 0.5 }]}>
+      <Text style={[styles.icon, { fontSize: dimension * 0.5, color: found?.color ? '#fff' : colors.textSecondary }]}>
         {icon}
       </Text>
     </View>

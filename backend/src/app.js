@@ -6,6 +6,7 @@ const { errorHandler } = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth');
 const transactionRoutes = require('./routes/transactions');
 const receiptRoutes = require('./routes/receipts');
+const pocketRoutes = require('./routes/pockets');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/receipts', receiptRoutes);
+app.use('/api/pockets', pocketRoutes);
 
 app.use(errorHandler);
 

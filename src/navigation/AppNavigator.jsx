@@ -3,6 +3,7 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../constants/colors';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -11,10 +12,10 @@ import AddTransactionScreen from '../screens/AddTransactionScreen';
 import TransactionDetailScreen from '../screens/TransactionDetailScreen';
 import TransactionListScreen from '../screens/TransactionListScreen';
 import EditTransactionScreen from '../screens/EditTransactionScreen';
-import ScanScreen from '../screens/ScanScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ReportScreen from '../screens/ReportScreen';
 import LoginScreen from '../screens/LoginScreen';
+import AllocateScreen from '../screens/AllocateScreen';
 
 // ----- Stack Navigator untuk Tab Home -----
 const HomeStack = createNativeStackNavigator();
@@ -52,6 +53,11 @@ function HomeStackScreen() {
         component={ReportScreen}
         options={{ headerShown: false }}
       />
+      <HomeStack.Screen
+        name="Allocate"
+        component={AllocateScreen}
+        options={{ headerShown: true, title: 'Bagi Saldo', headerTintColor: colors.text }}
+      />
     </HomeStack.Navigator>
   );
 }
@@ -86,12 +92,12 @@ const Tab = createBottomTabNavigator();
 
 const TAB_ICONS = {
   HomeTab: { focused: 'home-sharp', unfocused: 'home-outline' },
-  ScanTab: { focused: 'scan-sharp', unfocused: 'scan-outline' },
   HistoryTab: { focused: 'receipt-sharp', unfocused: 'receipt-outline' },
 };
 
 export default function AppNavigator() {
   const { loading, isAuthenticated } = useAuth();
+  const insets = useSafeAreaInsets();
 
   if (loading) {
     return (
@@ -114,8 +120,8 @@ export default function AppNavigator() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 80,
-          paddingBottom: 12,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom + 6,
           paddingTop: 6,
         },
         tabBarLabelStyle: {
@@ -129,7 +135,6 @@ export default function AppNavigator() {
       })}
     >
       <Tab.Screen name="HomeTab" component={HomeStackScreen} options={{ title: 'Home' }} />
-      <Tab.Screen name="ScanTab" component={ScanScreen} options={{ title: 'Scan' }} />
       <Tab.Screen name="HistoryTab" component={HistoryStackScreen} options={{ title: 'History' }} />
     </Tab.Navigator>
   );

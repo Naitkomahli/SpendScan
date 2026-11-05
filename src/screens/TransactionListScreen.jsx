@@ -13,6 +13,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../constants/colors';
 import { CATEGORIES } from '../constants/categories';
@@ -40,6 +41,7 @@ function formatDateLabel(dateString) {
 }
 
 export default function TransactionListScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -201,7 +203,7 @@ export default function TransactionListScreen({ navigation }) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerRow}>
           <View style={styles.logoSmall}>
             <Ionicons name="receipt" size={18} color={colors.primary} />
@@ -350,7 +352,7 @@ const styles = StyleSheet.create({
   retryText: { marginTop: 12, fontSize: 14, color: colors.primary, fontWeight: '600' },
 
   // Header
-  header: { backgroundColor: colors.surface, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 56, paddingBottom: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
+  header: { backgroundColor: colors.surface, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoSmall: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primaryContainer, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '700', color: colors.primary },
@@ -385,8 +387,6 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   filterChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.3 },
   filterChip: { paddingHorizontal: 14, paddingVertical: 8, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 20 },
-  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
   filterChipTextActive: { color: '#fff' },
 
   // List
@@ -402,11 +402,11 @@ const styles = StyleSheet.create({
   cardAmount: { fontSize: 14, fontWeight: '700', color: colors.danger },
   cardAmountIncome: { color: colors.success },
   typeBadge: { marginTop: 4, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  typeBadgeExpense: { backgroundColor: colors.errorContainer },
-  typeBadgeIncome: { backgroundColor: colors.primaryContainer },
+  typeBadgeExpense: { backgroundColor: colors.expenseContainer },
+  typeBadgeIncome: { backgroundColor: colors.incomeContainer },
   typeBadgeText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
-  typeBadgeTextExpense: { color: colors.error },
-  typeBadgeTextIncome: { color: colors.primary },
+  typeBadgeTextExpense: { color: colors.expense },
+  typeBadgeTextIncome: { color: colors.income },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },

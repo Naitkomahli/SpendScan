@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   },
   categoryItemSelected: {
     borderColor: colors.primary,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: colors.primaryContainer,
   },
   categoryIcon: {
     fontSize: 16,

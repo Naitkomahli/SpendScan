@@ -1,4 +1,5 @@
 const OpenAI = require('openai');
+const { createError } = require('../middleware/errorHandler');
 
 const client = new OpenAI({
   apiKey: process.env.LLM_API_KEY,
@@ -66,9 +67,9 @@ async function parseReceiptImage(base64Image, imageType) {
   } catch (err) {
     console.error('LLM Vision parse error:', err.message);
     if (err.message.includes('quota') || err.message.includes('429')) {
-      console.error('Groq quota exhausted. Try again later.');
+      throw createError(429, 'Kuota pembaca struk habis. Coba lagi nanti.');
     }
-    return { items: [], merchant: null, transactionDate: null, rawResponse: null };
+    throw createError(502, `Gagal membaca struk: ${err.message}`);
   }
 }
 

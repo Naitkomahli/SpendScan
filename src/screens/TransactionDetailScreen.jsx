@@ -233,10 +233,10 @@ const styles = StyleSheet.create({
   // Hero
   heroCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 20, marginBottom: 16, overflow: 'hidden' },
   heroHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
-  heroIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.secondaryContainer, alignItems: 'center', justifyContent: 'center' },
+  heroIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primaryContainer, alignItems: 'center', justifyContent: 'center' },
   heroEmoji: { fontSize: 22 },
-  categoryPill: { backgroundColor: colors.secondaryContainer, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, alignSelf: 'flex-start', marginBottom: 4 },
-  categoryPillText: { fontSize: 11, fontWeight: '600', color: colors.secondary },
+  categoryPill: { backgroundColor: colors.highlightContainer, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, alignSelf: 'flex-start', marginBottom: 4 },
+  categoryPillText: { fontSize: 11, fontWeight: '600', color: colors.text },
   heroTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
   heroAmountSection: {},
   heroAmountLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 },

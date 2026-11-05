@@ -1,76 +1,217 @@
 const { supabaseAdmin } = require('../config/supabase');
 const { createError } = require('../middleware/errorHandler');
 
-const POCKET_KEYS = ['pokok', 'foya', 'wajib'];
+const DEFAULT_ICON = 'wallet';
+const DEFAULT_COLOR = '#2F6B4F';
+
+function toClient(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    icon: row.icon || DEFAULT_ICON,
+    color: row.color || DEFAULT_COLOR,
+    allocated: Number(row.allocated) || 0,
+    sortOrder: row.sort_order || 0,
+  };
+}
+
+async function getEnabled(userId) {
+  const { data, error } = await supabaseAdmin
+    .from('users')
+    .select('pockets_enabled')
+    .eq('id', userId)
+    .single();
+
+  if (error) return false;
+  return !!data?.pockets_enabled;
+}
 
 async function getAll(req, res, next) {
   try {
     const { data, error } = await supabaseAdmin
       .from('pockets')
-      .select('key, allocated')
-      .eq('user_id', req.user.id);
+      .select('id, name, icon, color, allocated, sort_order')
+      .eq('user_id', req.user.id)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
 
     if (error) throw createError(500, error.message);
 
-    const result = {};
-    for (const key of POCKET_KEYS) {
-      result[key] = { allocated: 0 };
-    }
-    for (const row of data || []) {
-      result[row.key] = { allocated: Number(row.allocated) };
-    }
+    const enabled = await getEnabled(req.user.id);
 
     res.json({
       success: true,
       message: 'Pockets fetched successfully',
-      data: result,
+      data: {
+        enabled,
+        pockets: (data || []).map(toClient),
+      },
     });
   } catch (err) {
     next(err);
   }
 }
 
-async function upsert(req, res, next) {
+async function create(req, res, next) {
   try {
-    const body = req.body || {};
-    const rows = [];
+    const { name, icon, color, allocated } = req.body || {};
 
-    for (const key of POCKET_KEYS) {
-      const entry = body[key];
-      if (!entry) continue;
-
-      const allocated = Number(entry.allocated);
-      if (isNaN(allocated) || allocated < 0) {
-        throw createError(400, `Invalid allocated value for pocket "${key}"`);
-      }
-
-      rows.push({
-        user_id: req.user.id,
-        key,
-        allocated,
-        updated_at: new Date().toISOString(),
-      });
+    if (!name || !String(name).trim()) {
+      throw createError(400, 'Nama kantong wajib diisi');
     }
 
-    if (rows.length === 0) {
-      throw createError(400, 'At least one pocket allocation is required');
+    const amount = Number(allocated) || 0;
+    if (isNaN(amount) || amount < 0) {
+      throw createError(400, 'Alokasi tidak boleh negatif');
     }
+
+    const { data: last } = await supabaseAdmin
+      .from('pockets')
+      .select('sort_order')
+      .eq('user_id', req.user.id)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const nextOrder = (last?.sort_order || 0) + 1;
 
     const { data, error } = await supabaseAdmin
       .from('pockets')
-      .upsert(rows, { onConflict: 'user_id,key' })
-      .select();
+      .insert([{
+        user_id: req.user.id,
+        name: String(name).trim(),
+        icon: icon || DEFAULT_ICON,
+        color: color || DEFAULT_COLOR,
+        allocated: amount,
+        sort_order: nextOrder,
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') throw createError(409, 'Nama kantong sudah dipakai');
+      throw createError(500, error.message);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Kantong berhasil dibuat',
+      data: toClient(data),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function update(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { name, icon, color, allocated, sortOrder } = req.body || {};
+
+    const { data: existing, error: fetchError } = await supabaseAdmin
+      .from('pockets')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (fetchError || !existing) {
+      throw createError(404, 'Kantong tidak ditemukan');
+    }
+
+    const updates = { updated_at: new Date().toISOString() };
+
+    if (name !== undefined) {
+      if (!String(name).trim()) throw createError(400, 'Nama kantong wajib diisi');
+      updates.name = String(name).trim();
+    }
+    if (icon !== undefined) updates.icon = icon;
+    if (color !== undefined) updates.color = color;
+    if (allocated !== undefined) {
+      const amount = Number(allocated);
+      if (isNaN(amount) || amount < 0) throw createError(400, 'Alokasi tidak valid');
+      updates.allocated = amount;
+    }
+    if (sortOrder !== undefined) updates.sort_order = Number(sortOrder) || 0;
+
+    const { data, error } = await supabaseAdmin
+      .from('pockets')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') throw createError(409, 'Nama kantong sudah dipakai');
+      throw createError(500, error.message);
+    }
+
+    res.json({
+      success: true,
+      message: 'Kantong berhasil diperbarui',
+      data: toClient(data),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function remove(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const { data: existing, error: fetchError } = await supabaseAdmin
+      .from('pockets')
+      .select('id')
+      .eq('id', id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (fetchError || !existing) {
+      throw createError(404, 'Kantong tidak ditemukan');
+    }
+
+    // Transaksi terkait otomatis jadi "Tanpa Kantong" (FK ON DELETE SET NULL)
+    const { error } = await supabaseAdmin
+      .from('pockets')
+      .delete()
+      .eq('id', id);
 
     if (error) throw createError(500, error.message);
 
     res.json({
       success: true,
-      message: 'Pockets saved successfully',
-      data,
+      message: 'Kantong berhasil dihapus',
+      data: null,
     });
   } catch (err) {
     next(err);
   }
 }
 
-module.exports = { getAll, upsert };
+async function setEnabled(req, res, next) {
+  try {
+    const { enabled } = req.body || {};
+
+    if (typeof enabled !== 'boolean') {
+      throw createError(400, 'Field "enabled" harus berupa boolean');
+    }
+
+    const { error } = await supabaseAdmin
+      .from('users')
+      .update({ pockets_enabled: enabled })
+      .eq('id', req.user.id);
+
+    if (error) throw createError(500, error.message);
+
+    res.json({
+      success: true,
+      message: 'Setelan Bagi Saldo disimpan',
+      data: { enabled },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { getAll, create, update, remove, setEnabled };

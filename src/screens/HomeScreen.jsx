@@ -13,7 +13,6 @@ import { colors } from '../constants/colors';
 import { formatCurrency } from '../utils/formatCurrency';
 import { getAll } from '../services/transactionService';
 import { getPockets } from '../services/pocketService';
-import { POCKETS } from '../constants/pockets';
 import PocketCard from '../components/PocketCard';
 import { useAuth } from '../contexts/AuthContext';
 import TransactionCard from '../components/TransactionCard';
@@ -25,7 +24,8 @@ export default function HomeScreen({ navigation }) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [transactions, setTransactions] = useState([]);
-  const [pocketAllocations, setPocketAllocations] = useState({});
+  const [pockets, setPockets] = useState([]);
+  const [pocketsEnabled, setPocketsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -40,9 +40,10 @@ export default function HomeScreen({ navigation }) {
     try {
       setLoading(true);
       setError(null);
-      const [data, savedPockets] = await Promise.all([getAll(), getPockets()]);
+      const [data, pocketData] = await Promise.all([getAll(), getPockets()]);
       setTransactions(data);
-      setPocketAllocations(savedPockets || {});
+      setPockets(pocketData.pockets);
+      setPocketsEnabled(pocketData.enabled);
     } catch (err) {
       setError('Gagal memuat data. Ketuk untuk mencoba lagi.');
     } finally {
@@ -85,14 +86,21 @@ export default function HomeScreen({ navigation }) {
       }, [])
       .sort((a, b) => b.total - a.total);
 
-    const pocketSpent = {
-      pokok: monthTxs.filter((t) => t.type === 'expense' && t.category === 'Pokok').reduce((s, t) => s + Number(t.amount), 0),
-      foya: monthTxs.filter((t) => t.type === 'expense' && t.category === 'Foya-foya').reduce((s, t) => s + Number(t.amount), 0),
-      wajib: monthTxs.filter((t) => t.type === 'expense' && t.category === 'Tabungan Wajib').reduce((s, t) => s + Number(t.amount), 0),
-    };
+    const pocketSpent = {};
+    let tanpaKantong = 0;
 
-    return { income, expense, balance: income - expense, categoryBreakdown, pocketSpent };
-  }, [transactions, currentMonth]);
+    monthTxs
+      .filter((t) => t.type === 'expense')
+      .forEach((t) => {
+        if (t.pocketId) {
+          pocketSpent[t.pocketId] = (pocketSpent[t.pocketId] || 0) + Number(t.amount);
+        } else if (pocketsEnabled) {
+          tanpaKantong += Number(t.amount);
+        }
+      });
+
+    return { income, expense, balance: income - expense, categoryBreakdown, pocketSpent, tanpaKantong };
+  }, [transactions, currentMonth, pocketsEnabled]);
 
   const overallData = useMemo(() => {
     const income = transactions
@@ -190,22 +198,72 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.overallSub}>Saldo seluruh akun</Text>
         </View>
 
-        {/* Kantong Tabungan */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Kantong Tabungan</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Allocate')}>
-            <Text style={styles.seeAll}>Bagi Saldo</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Kantong (hanya kalau Bagi Saldo aktif) */}
+        {pocketsEnabled && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Kantong</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('ManagePockets')}>
+                <Text style={styles.seeAll}>Kelola</Text>
+              </TouchableOpacity>
+            </View>
 
-        {POCKETS.map((p) => (
-          <PocketCard
-            key={p.key}
-            pocket={p}
-            allocated={pocketAllocations?.[p.key]?.allocated || 0}
-            spent={monthData?.pocketSpent?.[p.key] || 0}
-          />
-        ))}
+            {pockets.length === 0 ? (
+              <TouchableOpacity
+                style={styles.pocketEmpty}
+                onPress={() => navigation.navigate('ManagePockets')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="albums-outline" size={24} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.pocketEmptyTitle}>Belum ada kantong</Text>
+                  <Text style={styles.pocketEmptyText}>
+                    Buat kantong dulu untuk mulai mencatat pengeluaran.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            ) : (
+              <>
+                {pockets.map((p) => (
+                  <PocketCard
+                    key={p.id}
+                    pocket={{
+                      label: p.name,
+                      icon: p.icon || 'wallet',
+                      color: p.color || colors.primary,
+                      container: `${p.color || colors.primary}22`,
+                    }}
+                    allocated={p.allocated || 0}
+                    spent={monthData?.pocketSpent?.[p.id] || 0}
+                  />
+                ))}
+
+                {monthData?.tanpaKantong > 0 && (
+                  <PocketCard
+                    pocket={{
+                      label: 'Tanpa Kantong',
+                      icon: 'help-circle',
+                      color: colors.textSecondary,
+                      container: colors.surfaceContainer,
+                    }}
+                    allocated={0}
+                    spent={monthData.tanpaKantong}
+                  />
+                )}
+
+                <TouchableOpacity
+                  style={styles.allocateButton}
+                  onPress={() => navigation.navigate('Allocate')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="pie-chart-outline" size={18} color={colors.primary} />
+                  <Text style={styles.allocateButtonText}>Bagi Saldo</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </>
+        )}
 
         {/* Income & Expense Cards */}
         <View style={styles.summaryRow}>
@@ -242,7 +300,9 @@ export default function HomeScreen({ navigation }) {
         {/* Category Breakdown */}
         {monthData.categoryBreakdown.length > 0 && (
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Pengeluaran per Kategori</Text>
+            <Text style={styles.sectionTitle}>
+              {pocketsEnabled ? 'Pengeluaran per Kantong' : 'Pengeluaran per Kategori'}
+            </Text>
           </View>
         )}
         {monthData.categoryBreakdown.slice(0, 5).map((cat) => {
@@ -291,6 +351,7 @@ export default function HomeScreen({ navigation }) {
             <TransactionCard
               key={item.id}
               transaction={item}
+              pockets={pockets}
               onPress={() =>
               navigation.navigate('TransactionDetail', { id: item.id })
             }
@@ -366,6 +427,32 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   sectionTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
   seeAll: { fontSize: 13, fontWeight: '600', color: colors.primary },
+
+  // Pocket empty / allocate
+  pocketEmpty: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+  },
+  pocketEmptyTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+  pocketEmptyText: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  allocateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.primaryContainer,
+    borderRadius: 16,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  allocateButtonText: { fontSize: 14, fontWeight: '700', color: colors.primary },
 
   categoryRow: {
     flexDirection: 'row',

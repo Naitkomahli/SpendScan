@@ -16,6 +16,7 @@ import { colors } from '../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency } from '../utils/formatCurrency';
 import { getAll } from '../services/transactionService';
+import { getPockets } from '../services/pocketService';
 import { CATEGORIES } from '../constants/categories';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -43,6 +44,8 @@ function extractMonthOptions(transactions) {
 export default function ReportScreen() {
   const insets = useSafeAreaInsets();
   const [transactions, setTransactions] = useState([]);
+  const [pockets, setPockets] = useState([]);
+  const [pocketsEnabled, setPocketsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
@@ -64,8 +67,10 @@ export default function ReportScreen() {
   async function fetchTransactions() {
     try {
       setLoading(true);
-      const data = await getAll();
+      const [data, pocketData] = await Promise.all([getAll(), getPockets()]);
       setTransactions(data);
+      setPockets(pocketData.pockets);
+      setPocketsEnabled(pocketData.enabled);
     } catch (err) {
       // silent
     } finally {
@@ -158,12 +163,20 @@ export default function ReportScreen() {
 
   const currentMonthLabel = monthOptions.find((m) => m.value === selectedMonth)?.label || selectedMonth;
 
-  const categoryColorMap = {
-    Pokok: '#2F6B4F',
-    'Foya-foya': '#D4A94F',
-    'Tabungan Wajib': '#1A4633',
-    Pemasukan: '#3FA66B',
-  };
+  const catMeta = useMemo(() => {
+    const map = {};
+    CATEGORIES.forEach((c) => {
+      map[c.label] = { icon: c.icon, color: c.color, isIonicon: false };
+    });
+    pockets.forEach((p) => {
+      map[p.name] = {
+        icon: p.icon || 'wallet',
+        color: p.color || colors.primary,
+        isIonicon: true,
+      };
+    });
+    return map;
+  }, [pockets]);
 
   return (
     <View style={styles.container}>
@@ -266,17 +279,23 @@ export default function ReportScreen() {
         {/* Category Breakdown */}
         {monthData.categoryBreakdown.length > 0 && (
           <View style={styles.sectionBlock}>
-            <Text style={styles.sectionTitle}>Pengeluaran per Kategori</Text>
+            <Text style={styles.sectionTitle}>
+              {pocketsEnabled ? 'Pengeluaran per Kantong' : 'Pengeluaran per Kategori'}
+            </Text>
             {monthData.categoryBreakdown.map((cat) => {
               const pct = monthData.expense > 0
                 ? Math.round((cat.total / monthData.expense) * 100)
                 : 0;
-              const catInfo = CATEGORIES.find((c) => c.label === cat.category);
-              const barColor = categoryColorMap[cat.category] || colors.primary;
+              const meta = catMeta[cat.category];
+              const barColor = meta?.color || colors.primary;
               return (
                 <View key={cat.category} style={styles.categoryRow}>
                   <View style={styles.categoryLeft}>
-                    <Text style={styles.categoryIcon}>{catInfo?.icon || '📦'}</Text>
+                    {meta?.isIonicon ? (
+                      <Ionicons name={meta.icon} size={16} color={barColor} />
+                    ) : (
+                      <Text style={styles.categoryIcon}>{meta?.icon || '📦'}</Text>
+                    )}
                     <Text style={styles.categoryLabel}>{cat.category}</Text>
                   </View>
                   <View style={styles.categoryRight}>

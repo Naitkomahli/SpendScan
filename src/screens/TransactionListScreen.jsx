@@ -19,6 +19,7 @@ import { colors } from '../constants/colors';
 import { CATEGORIES } from '../constants/categories';
 import { formatCurrency } from '../utils/formatCurrency';
 import { getAll } from '../services/transactionService';
+import { getPockets } from '../services/pocketService';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import CategoryBadge from '../components/CategoryBadge';
 import EmptyState from '../components/EmptyState';
@@ -43,6 +44,8 @@ function formatDateLabel(dateString) {
 export default function TransactionListScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [transactions, setTransactions] = useState([]);
+  const [pockets, setPockets] = useState([]);
+  const [pocketsEnabled, setPocketsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -82,8 +85,10 @@ export default function TransactionListScreen({ navigation }) {
   async function fetchTransactions() {
     try {
       setError(null);
-      const data = await getAll();
+      const [data, pocketData] = await Promise.all([getAll(), getPockets()]);
       setTransactions(data);
+      setPockets(pocketData.pockets);
+      setPocketsEnabled(pocketData.enabled);
     } catch (err) {
       setError('Gagal memuat data. Tarik layar untuk mencoba lagi.');
     } finally {
@@ -121,7 +126,11 @@ export default function TransactionListScreen({ navigation }) {
     );
 
     if (activeFilter !== 'Semua') {
-      filtered = filtered.filter((t) => t.category === activeFilter);
+      if (activeFilter === 'Tanpa Kantong') {
+        filtered = filtered.filter((t) => !t.pocketId);
+      } else {
+        filtered = filtered.filter((t) => t.category === activeFilter);
+      }
     }
 
     if (searchQuery.trim()) {
@@ -157,6 +166,13 @@ export default function TransactionListScreen({ navigation }) {
 
     return sorted.map(([title, data]) => ({ title, data }));
   }, [filtered]);
+
+  const filterOptions = useMemo(() => {
+    if (pocketsEnabled) {
+      return ['Semua', ...pockets.map((p) => p.name), 'Tanpa Kantong'];
+    }
+    return ['Semua', ...CATEGORIES.map((c) => c.label)];
+  }, [pocketsEnabled, pockets]);
 
   const currentMonthLabel = monthOptions.find((m) => m.value === selectedMonth)?.label || selectedMonth;
 
@@ -244,7 +260,7 @@ export default function TransactionListScreen({ navigation }) {
       {/* Filter Chips */}
       <View style={styles.filterWrapper}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-          {['Semua', ...CATEGORIES.map((c) => c.label)].map((label) => {
+          {filterOptions.map((label) => {
             const isActive = activeFilter === label;
             return (
               <TouchableOpacity
@@ -287,7 +303,7 @@ export default function TransactionListScreen({ navigation }) {
               onPress={() => navigation.navigate('TransactionDetail', { id: item.id })}
               activeOpacity={0.7}
             >
-              <CategoryBadge category={item.category} size="md" />
+              <CategoryBadge category={item.category} size="md" pockets={pockets} />
               <View style={styles.cardInfo}>
                 <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
                 <Text style={styles.cardCategory}>{item.category}</Text>

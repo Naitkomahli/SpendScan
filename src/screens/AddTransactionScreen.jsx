@@ -16,6 +16,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../constants/colors';
 import { EXPENSE_CATEGORIES } from '../constants/categories';
 import { create } from '../services/transactionService';
+import { getPockets } from '../services/pocketService';
 
 const INCOME_CATEGORY = 'Pemasukan';
 
@@ -32,6 +33,25 @@ export default function AddTransactionScreen({ route, navigation }) {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [source, setSource] = useState('manual');
+
+  const [pockets, setPockets] = useState([]);
+  const [pocketsEnabled, setPocketsEnabled] = useState(false);
+  const [pocketId, setPocketId] = useState(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        const data = await getPockets();
+        if (!active) return;
+        setPockets(data.pockets);
+        setPocketsEnabled(data.enabled);
+      })();
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -66,8 +86,10 @@ export default function AddTransactionScreen({ route, navigation }) {
     setType(selectedType);
     if (selectedType === 'income') {
       setCategory(INCOME_CATEGORY);
+      setPocketId(null);
     } else {
       setCategory('');
+      setPocketId(null);
     }
     setErrors({});
   }
@@ -77,7 +99,13 @@ export default function AddTransactionScreen({ route, navigation }) {
     if (!title.trim()) newErrors.title = 'Judul wajib diisi';
     if (!amount.trim()) newErrors.amount = 'Jumlah wajib diisi';
     else if (isNaN(Number(amount)) || Number(amount) <= 0) newErrors.amount = 'Jumlah harus angka positif';
-    if (!isIncome && !category) newErrors.category = 'Pilih kategori';
+    if (!isIncome) {
+      if (pocketsEnabled) {
+        if (!pocketId) newErrors.category = 'Pilih kantong';
+      } else if (!category) {
+        newErrors.category = 'Pilih kategori';
+      }
+    }
     if (!transactionDate) newErrors.transactionDate = 'Tanggal wajib diisi';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -95,6 +123,7 @@ export default function AddTransactionScreen({ route, navigation }) {
         note: note.trim() || null,
         source: source,
         type,
+        pocketId: !isIncome && pocketsEnabled ? pocketId : null,
       });
       Alert.alert('Berhasil', 'Transaksi berhasil ditambahkan.', [
         { text: 'OK', onPress: () => navigation.goBack() },
@@ -185,6 +214,61 @@ export default function AddTransactionScreen({ route, navigation }) {
               <Text style={styles.incomeCategoryIcon}>💰</Text>
               <Text style={styles.incomeCategoryLabel}>Pemasukan</Text>
             </View>
+          </>
+        ) : pocketsEnabled ? (
+          <>
+            <Text style={styles.label}>Kantong</Text>
+            {pockets.length === 0 ? (
+              <TouchableOpacity
+                style={styles.pocketNotice}
+                onPress={() => navigation.navigate('ManagePockets')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="albums-outline" size={22} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.pocketNoticeTitle}>Belum ada kantong</Text>
+                  <Text style={styles.pocketNoticeText}>
+                    Buat kantong dulu untuk mencatat pengeluaran.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            ) : (
+              <>
+                <View style={styles.categoryGrid}>
+                  {pockets.map((p) => {
+                    const isSelected = pocketId === p.id;
+                    const color = p.color || colors.primary;
+                    return (
+                      <TouchableOpacity
+                        key={p.id}
+                        style={[
+                          styles.categoryChip,
+                          isSelected && { borderColor: color, backgroundColor: `${color}22` },
+                        ]}
+                        onPress={() => {
+                          setPocketId(p.id);
+                          setCategory(p.name);
+                          if (errors.category) setErrors((prev) => ({ ...prev, category: null }));
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons
+                          name={p.icon || 'wallet'}
+                          size={16}
+                          color={isSelected ? color : colors.textSecondary}
+                          style={{ marginRight: 6 }}
+                        />
+                        <Text style={[styles.categoryLabel, isSelected && { color, fontWeight: '600' }]}>
+                          {p.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
+              </>
+            )}
           </>
         ) : (
           <>
@@ -314,6 +398,21 @@ const styles = StyleSheet.create({
   categoryIcon: { fontSize: 16, marginRight: 4 },
   categoryLabel: { fontSize: 13, color: colors.text, fontWeight: '500' },
   categoryLabelSelected: { color: colors.primary, fontWeight: '600' },
+
+  // Pocket notice (belum ada kantong)
+  pocketNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 4,
+  },
+  pocketNoticeTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+  pocketNoticeText: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
 
   // Income Category
   incomeCategoryBox: {

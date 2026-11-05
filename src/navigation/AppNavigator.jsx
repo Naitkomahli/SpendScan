@@ -16,6 +16,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import ReportScreen from '../screens/ReportScreen';
 import LoginScreen from '../screens/LoginScreen';
 import AllocateScreen from '../screens/AllocateScreen';
+import ManagePocketsScreen from '../screens/ManagePocketsScreen';
 
 // ----- Stack Navigator untuk Tab Home -----
 const HomeStack = createNativeStackNavigator();
@@ -57,6 +58,11 @@ function HomeStackScreen() {
         name="Allocate"
         component={AllocateScreen}
         options={{ headerShown: true, title: 'Bagi Saldo', headerTintColor: colors.text }}
+      />
+      <HomeStack.Screen
+        name="ManagePockets"
+        component={ManagePocketsScreen}
+        options={{ headerShown: true, title: 'Kelola Kantong', headerTintColor: colors.text }}
       />
     </HomeStack.Navigator>
   );

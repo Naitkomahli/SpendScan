@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { login as apiLogin, register as apiRegister } from '../services/authService';
+import { setPocketsEnabled as apiSetPocketsEnabled, getPockets } from '../services/pocketService';
 import { setUnauthorizedHandler } from '../services/api';
 
 const TOKEN_KEY = 'authToken';
@@ -12,6 +13,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pocketsEnabled, setPocketsEnabledState] = useState(false);
 
   async function loadStoredAuth() {
     try {
@@ -19,8 +21,14 @@ export function AuthProvider({ children }) {
       const storedUser = await SecureStore.getItemAsync(USER_KEY);
 
       if (storedToken && storedUser) {
+        const parsedUser = JSON.parse(storedUser);
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        setUser(parsedUser);
+        setPocketsEnabledState(!!parsedUser.pockets_enabled);
+
+        // Sinkronkan status fitur dari server (user lama mungkin belum punya flag ini)
+        const pocketData = await getPockets();
+        setPocketsEnabledState(pocketData.enabled);
       }
     } catch (err) {
       // Gagal load token — anggap tidak login
@@ -29,15 +37,19 @@ export function AuthProvider({ children }) {
     }
   }
 
+  function persistUser(userData) {
+    setUser(userData);
+    setPocketsEnabledState(!!userData.pockets_enabled);
+    SecureStore.setItemAsync(USER_KEY, JSON.stringify(userData)).catch(() => {});
+  }
+
   const login = useCallback(async (email, password) => {
     const data = await apiLogin(email, password);
     const { user: userData, token: newToken } = data;
 
     await SecureStore.setItemAsync(TOKEN_KEY, newToken);
-    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(userData));
-
+    persistUser(userData);
     setToken(newToken);
-    setUser(userData);
   }, []);
 
   const register = useCallback(async (name, email, password) => {
@@ -45,10 +57,8 @@ export function AuthProvider({ children }) {
     const { user: userData, token: newToken } = data;
 
     await SecureStore.setItemAsync(TOKEN_KEY, newToken);
-    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(userData));
-
+    persistUser(userData);
     setToken(newToken);
-    setUser(userData);
   }, []);
 
   const logout = useCallback(async () => {
@@ -57,6 +67,18 @@ export function AuthProvider({ children }) {
 
     setToken(null);
     setUser(null);
+    setPocketsEnabledState(false);
+  }, []);
+
+  const updatePocketsEnabled = useCallback(async (enabled) => {
+    await apiSetPocketsEnabled(enabled);
+    setPocketsEnabledState(enabled);
+    setUser((prev) => {
+      const next = { ...(prev || {}), pockets_enabled: enabled };
+      SecureStore.setItemAsync(USER_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+    return enabled;
   }, []);
 
   useEffect(() => {
@@ -71,6 +93,8 @@ export function AuthProvider({ children }) {
         token,
         loading,
         isAuthenticated: !!token,
+        pocketsEnabled,
+        updatePocketsEnabled,
         login,
         register,
         logout,

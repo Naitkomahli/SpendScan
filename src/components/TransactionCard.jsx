@@ -10,8 +10,9 @@ import CategoryBadge from './CategoryBadge';
  * Props:
  * - transaction: object (data transaksi)
  * - onPress: function (dipanggil saat kartu ditekan)
+ * - pockets: array kantong user (optional) untuk icon badge
  */
-export default function TransactionCard({ transaction, onPress }) {
+export default function TransactionCard({ transaction, onPress, pockets }) {
   if (!transaction) return null;
 
   const { title, amount, category, transactionDate, type } = transaction;
@@ -25,7 +26,7 @@ export default function TransactionCard({ transaction, onPress }) {
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <CategoryBadge category={category} size="sm" />
+      <CategoryBadge category={category} size="sm" pockets={pockets} />
 
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={1}>

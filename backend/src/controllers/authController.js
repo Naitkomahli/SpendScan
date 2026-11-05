@@ -20,7 +20,7 @@ async function register(req, res, next) {
     const { data, error } = await supabaseAdmin
       .from('users')
       .insert([{ name, email, password_hash: hashedPassword }])
-      .select('id, name, email, created_at')
+      .select('id, name, email, created_at, pockets_enabled')
       .single();
 
     if (error) {

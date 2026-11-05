@@ -15,12 +15,14 @@ import { colors } from '../constants/colors';
 import { CATEGORIES } from '../constants/categories';
 import { formatCurrency } from '../utils/formatCurrency';
 import { getById, deleteById } from '../services/transactionService';
+import { getPockets } from '../services/pocketService';
 import CategoryBadge from '../components/CategoryBadge';
 import { SkeletonDetail } from '../components/Skeleton';
 
 export default function TransactionDetailScreen({ route, navigation }) {
   const { id } = route.params;
   const [transaction, setTransaction] = useState(null);
+  const [pockets, setPockets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -32,8 +34,9 @@ export default function TransactionDetailScreen({ route, navigation }) {
   async function fetchTransaction() {
     try {
       setLoading(true);
-      const data = await getById(id);
+      const [data, pocketData] = await Promise.all([getById(id), getPockets()]);
       setTransaction(data);
+      setPockets(pocketData.pockets);
     } catch (err) {
       Alert.alert('Error', 'Gagal memuat detail transaksi.', [
         { text: 'Kembali', onPress: () => navigation.goBack() },
@@ -92,6 +95,10 @@ export default function TransactionDetailScreen({ route, navigation }) {
     (c) => c.label.toLowerCase() === transaction.category?.toLowerCase()
   );
 
+  const foundPocket = !foundCategory
+    ? pockets.find((p) => p.name?.toLowerCase() === transaction.category?.toLowerCase())
+    : null;
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -99,7 +106,15 @@ export default function TransactionDetailScreen({ route, navigation }) {
         <View style={styles.heroCard}>
           <View style={styles.heroHeader}>
             <View style={styles.heroIcon}>
-              <Text style={styles.heroEmoji}>{foundCategory?.icon || '📦'}</Text>
+              {foundPocket ? (
+                <Ionicons
+                  name={foundPocket.icon || 'wallet'}
+                  size={22}
+                  color={foundPocket.color || colors.primary}
+                />
+              ) : (
+                <Text style={styles.heroEmoji}>{foundCategory?.icon || '📦'}</Text>
+              )}
             </View>
             <View>
               <View style={styles.categoryPill}>

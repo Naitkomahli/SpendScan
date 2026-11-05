@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
 import { EXPENSE_CATEGORIES } from '../constants/categories';
 import { getById, update } from '../services/transactionService';
+import { getPockets } from '../services/pocketService';
 
 const INCOME_CATEGORY = 'Pemasukan';
 
@@ -32,6 +33,10 @@ export default function EditTransactionScreen({ route, navigation }) {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
 
+  const [pockets, setPockets] = useState([]);
+  const [pocketsEnabled, setPocketsEnabled] = useState(false);
+  const [pocketId, setPocketId] = useState(null);
+
   const isIncome = type === 'income';
   const accentColor = isIncome ? colors.success : colors.primary;
 
@@ -42,7 +47,10 @@ export default function EditTransactionScreen({ route, navigation }) {
   async function loadTransaction() {
     try {
       setLoading(true);
-      const data = await getById(id);
+      const [data, pocketData] = await Promise.all([getById(id), getPockets()]);
+
+      setPockets(pocketData.pockets);
+      setPocketsEnabled(pocketData.enabled);
 
       if (!data) {
         Alert.alert('Error', 'Transaksi tidak ditemukan.', [
@@ -57,6 +65,7 @@ export default function EditTransactionScreen({ route, navigation }) {
       setTransactionDate(data.transactionDate || '');
       setNote(data.note || '');
       setType(data.type || 'expense');
+      setPocketId(data.pocketId || null);
     } catch (err) {
       Alert.alert('Error', 'Gagal memuat data transaksi.', [
         { text: 'Kembali', onPress: () => navigation.goBack() },
@@ -70,8 +79,10 @@ export default function EditTransactionScreen({ route, navigation }) {
     setType(selectedType);
     if (selectedType === 'income') {
       setCategory(INCOME_CATEGORY);
+      setPocketId(null);
     } else {
       setCategory('');
+      setPocketId(null);
     }
     setErrors({});
   }
@@ -89,8 +100,12 @@ export default function EditTransactionScreen({ route, navigation }) {
       newErrors.amount = 'Jumlah harus angka positif';
     }
 
-    if (!isIncome && !category) {
-      newErrors.category = 'Pilih kategori';
+    if (!isIncome) {
+      if (pocketsEnabled) {
+        if (!pocketId) newErrors.category = 'Pilih kantong';
+      } else if (!category) {
+        newErrors.category = 'Pilih kategori';
+      }
     }
 
     if (!transactionDate) {
@@ -113,6 +128,7 @@ export default function EditTransactionScreen({ route, navigation }) {
         transactionDate,
         note: note.trim() || null,
         type,
+        pocketId: !isIncome && pocketsEnabled ? pocketId : null,
       });
 
       Alert.alert('Berhasil', 'Transaksi berhasil diperbarui.', [
@@ -210,6 +226,69 @@ export default function EditTransactionScreen({ route, navigation }) {
             <Text style={styles.incomeCategoryIcon}>💰</Text>
             <Text style={styles.incomeCategoryLabel}>Pemasukan</Text>
           </View>
+        ) : pocketsEnabled ? (
+          <>
+            {pockets.length === 0 ? (
+              <TouchableOpacity
+                style={styles.pocketNotice}
+                onPress={() => navigation.navigate('ManagePockets')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="albums-outline" size={22} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.pocketNoticeTitle}>Belum ada kantong</Text>
+                  <Text style={styles.pocketNoticeText}>
+                    Buat kantong dulu untuk mencatat pengeluaran.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            ) : (
+              <>
+                <View style={styles.categoryGrid}>
+                  {pockets.map((p) => {
+                    const isSelected = pocketId === p.id;
+                    const color = p.color || colors.primary;
+                    return (
+                      <TouchableOpacity
+                        key={p.id}
+                        style={[
+                          styles.categoryItem,
+                          isSelected && { borderColor: color, backgroundColor: `${color}22` },
+                        ]}
+                        onPress={() => {
+                          setPocketId(p.id);
+                          setCategory(p.name);
+                          if (errors.category)
+                            setErrors((prev) => ({ ...prev, category: null }));
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons
+                          name={p.icon || 'wallet'}
+                          size={16}
+                          color={isSelected ? color : colors.textSecondary}
+                          style={{ marginRight: 6 }}
+                        />
+                        <Text
+                          style={[
+                            styles.categoryLabel,
+                            isSelected && { color, fontWeight: '600' },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {p.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {errors.category && (
+                  <Text style={styles.errorText}>{errors.category}</Text>
+                )}
+              </>
+            )}
+          </>
         ) : (
           <>
             <View style={styles.categoryGrid}>
@@ -392,6 +471,19 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 4,
   },
+  pocketNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 4,
+  },
+  pocketNoticeTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+  pocketNoticeText: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   categoryItem: {
     flexDirection: 'row',
     alignItems: 'center',

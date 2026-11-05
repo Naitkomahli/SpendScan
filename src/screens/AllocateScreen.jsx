@@ -14,16 +14,16 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../constants/colors';
-import { POCKETS } from '../constants/pockets';
 import { formatCurrency } from '../utils/formatCurrency';
-import { getPockets, savePockets } from '../services/pocketService';
+import { getPockets, updatePocket } from '../services/pocketService';
 import { getAll } from '../services/transactionService';
 
 export default function AllocateScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [balance, setBalance] = useState(0);
-  const [allocations, setAllocations] = useState({ pokok: '', foya: '', wajib: '' });
+  const [pockets, setPockets] = useState([]);
+  const [allocations, setAllocations] = useState({});
   const [errors, setErrors] = useState({});
 
   useFocusEffect(
@@ -35,8 +35,7 @@ export default function AllocateScreen({ navigation }) {
   async function loadData() {
     try {
       setLoading(true);
-      const saved = await getPockets();
-      const txs = await getAll();
+      const [pocketData, txs] = await Promise.all([getPockets(), getAll()]);
 
       const income = txs
         .filter((t) => t.type === 'income')
@@ -44,15 +43,15 @@ export default function AllocateScreen({ navigation }) {
       const expense = txs
         .filter((t) => t.type === 'expense')
         .reduce((sum, t) => sum + Number(t.amount), 0);
-      const computedBalance = income - expense;
 
       const initial = {};
-      POCKETS.forEach((p) => {
-        initial[p.key] = (saved && saved[p.key] && saved[p.key].allocated) || 0;
+      pocketData.pockets.forEach((p) => {
+        initial[p.id] = String(p.allocated || 0);
       });
 
-      setAllocations({ pokok: String(initial.pokok), foya: String(initial.foya), wajib: String(initial.wajib) });
-      setBalance(computedBalance);
+      setPockets(pocketData.pockets);
+      setAllocations(initial);
+      setBalance(income - expense);
     } catch (err) {
       Alert.alert('Gagal', 'Gagal memuat data pengaturan.');
     } finally {
@@ -66,26 +65,18 @@ export default function AllocateScreen({ navigation }) {
   );
 
   const remainingUnallocated = balance - totalAllocated;
+  const overAllocated = totalAllocated > balance;
 
   function validate() {
     const newErrors = {};
-    let total = 0;
-
-    POCKETS.forEach((p) => {
-      const v = Number(allocations[p.key]) || 0;
-      if (!allocations[p.key].trim()) {
-        newErrors[p.key] = `${p.label} wajib diisi`;
-      } else if (isNaN(v) || v < 0) {
-        newErrors[p.key] = 'Masukkan angka valid';
-      } else {
-        total += v;
+    pockets.forEach((p) => {
+      const raw = (allocations[p.id] ?? '').trim();
+      if (!raw) {
+        newErrors[p.id] = `${p.name} wajib diisi`;
+      } else if (isNaN(Number(raw)) || Number(raw) < 0) {
+        newErrors[p.id] = 'Masukkan angka valid';
       }
     });
-
-    if (total > balance) {
-      newErrors.total = `Total alokasi melebihi saldo kamu. Sisa belum dibagi: ${formatCurrency(remainingUnallocated)}`;
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -94,12 +85,12 @@ export default function AllocateScreen({ navigation }) {
     if (!validate()) return;
     setSaving(true);
     try {
-      const payload = {};
-      POCKETS.forEach((p) => {
-        payload[p.key] = { allocated: Number(allocations[p.key]) || 0 };
-      });
-      await savePockets(payload);
-      Alert.alert('Berhasil', 'Saldo berhasil dibagi ke kantong tabungan.', [
+      await Promise.all(
+        pockets.map((p) =>
+          updatePocket(p.id, { allocated: Number(allocations[p.id]) || 0 })
+        )
+      );
+      Alert.alert('Berhasil', 'Saldo berhasil dibagi ke kantong.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (err) {
@@ -114,6 +105,26 @@ export default function AllocateScreen({ navigation }) {
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>Memuat data...</Text>
+      </View>
+    );
+  }
+
+  if (pockets.length === 0) {
+    return (
+      <View style={styles.centerContainer}>
+        <Ionicons name="albums-outline" size={48} color={colors.textSecondary} />
+        <Text style={styles.emptyTitle}>Belum ada kantong</Text>
+        <Text style={styles.emptyText}>
+          Buat kantong dulu sebelum membagi saldo.
+        </Text>
+        <TouchableOpacity
+          style={styles.emptyButton}
+          onPress={() => navigation.navigate('ManagePockets')}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add" size={18} color="#fff" />
+          <Text style={styles.emptyButtonText}>Buat Kantong</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -144,37 +155,48 @@ export default function AllocateScreen({ navigation }) {
           </Text>
         </View>
 
-        {POCKETS.map((p) => {
-          const isNegative = Number(allocations[p.key] || 0) < 0;
+        {pockets.map((p) => {
+          const color = p.color || colors.primary;
           return (
-            <View key={p.key} style={styles.inputSection}>
-              <Text style={styles.label}>{p.label}</Text>
-              <View style={[styles.inputRow, { borderBottomColor: errors[p.key] ? colors.danger : colors.border }]}>
+            <View key={p.id} style={styles.inputSection}>
+              <View style={styles.labelRow}>
+                <View style={[styles.pocketDot, { backgroundColor: `${color}22` }]}>
+                  <Ionicons name={p.icon || 'wallet'} size={14} color={color} />
+                </View>
+                <Text style={styles.label}>{p.name}</Text>
+              </View>
+              <View style={[styles.inputRow, { borderBottomColor: errors[p.id] ? colors.danger : colors.border }]}>
                 <Text style={styles.currency}>Rp</Text>
                 <TextInput
-                  style={[styles.input, errors[p.key] && { borderBottomColor: colors.danger }]}
+                  style={styles.input}
                   placeholder="0"
                   placeholderTextColor={colors.textSecondary}
-                  value={allocations[p.key]}
+                  value={allocations[p.id] ?? ''}
                   onChangeText={(text) => {
                     const numeric = text.replace(/[^0-9]/g, '');
-                    setAllocations((prev) => ({ ...prev, [p.key]: numeric }));
-                    if (errors[p.key]) setErrors((prev) => ({ ...prev, [p.key]: null }));
+                    setAllocations((prev) => ({ ...prev, [p.id]: numeric }));
+                    if (errors[p.id]) setErrors((prev) => ({ ...prev, [p.id]: null }));
                   }}
                   keyboardType="numeric"
                 />
               </View>
-              {errors[p.key] && <Text style={styles.errorText}>{errors[p.key]}</Text>}
+              {errors[p.id] && <Text style={styles.errorText}>{errors[p.id]}</Text>}
             </View>
           );
         })}
 
-        {errors.total && <Text style={styles.errorText}>{errors.total}</Text>}
+        {overAllocated && (
+          <Text style={styles.warningText}>
+            Total alokasi melebihi saldo kamu. Kamu masih bisa menyimpan, tapi saldo
+            akan minus.
+          </Text>
+        )}
 
         <TouchableOpacity
-          style={[styles.saveButton, { backgroundColor: colors.primary }, saving && { opacity: 0.6 }]}
+          style={[styles.saveButton, saving && { opacity: 0.6 }]}
           onPress={handleSave}
           activeOpacity={0.8}
+          disabled={saving}
         >
           {saving ? (
             <ActivityIndicator size="small" color="#fff" />
@@ -199,8 +221,12 @@ export default function AllocateScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   form: { padding: 16, paddingBottom: 32 },
-  centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
+  centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, paddingHorizontal: 24 },
   loadingText: { marginTop: 12, fontSize: 14, color: colors.textSecondary },
+  emptyTitle: { marginTop: 12, fontSize: 17, fontWeight: '700', color: colors.text },
+  emptyText: { marginTop: 6, fontSize: 13, color: colors.textSecondary, textAlign: 'center' },
+  emptyButton: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 24 },
+  emptyButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
   header: { alignItems: 'center', marginBottom: 20 },
   title: { fontSize: 20, fontWeight: '700', color: colors.text },
@@ -219,13 +245,16 @@ const styles = StyleSheet.create({
   summarySub: { fontSize: 13, color: colors.textSecondary, marginTop: 6 },
 
   inputSection: { marginBottom: 18 },
-  label: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 6 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  pocketDot: { width: 26, height: 26, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  label: { fontSize: 14, fontWeight: '600', color: colors.text },
   inputRow: { flexDirection: 'row', alignItems: 'baseline', borderBottomWidth: 2, paddingBottom: 8 },
   currency: { fontSize: 20, fontWeight: '700', color: colors.textSecondary, marginRight: 6 },
   input: { flex: 1, fontSize: 20, fontWeight: '700', color: colors.text, borderWidth: 0, padding: 0 },
   errorText: { fontSize: 12, color: colors.danger, marginTop: 4, marginLeft: 4 },
+  warningText: { fontSize: 12, color: colors.highlight, marginBottom: 8 },
 
-  saveButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 16, paddingVertical: 14, marginTop: 12 },
+  saveButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 16, paddingVertical: 14, marginTop: 12, backgroundColor: colors.primary },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600', marginLeft: 8 },
 
   hint: { marginTop: 24, alignItems: 'center', paddingHorizontal: 16 },

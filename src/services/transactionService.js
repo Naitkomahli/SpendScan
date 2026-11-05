@@ -8,6 +8,7 @@ function fromSnakeCase(item) {
     title: item.title,
     amount: Number(item.amount),
     category: item.category,
+    pocketId: item.pocket_id || null,
     transactionDate: item.transaction_date,
     note: item.note,
     receiptImageUrl: item.receipt_image_url,
@@ -40,6 +41,7 @@ export async function create(data) {
       note: data.note || null,
       source: data.source || 'manual',
       type: data.type || 'expense',
+      pocketId: data.pocketId || null,
     }),
   });
   return fromSnakeCase(result);
@@ -55,6 +57,7 @@ export async function update(id, data) {
       transactionDate: data.transactionDate,
       note: data.note || null,
       type: data.type,
+      pocketId: data.pocketId || null,
     }),
   });
   return fromSnakeCase(result);

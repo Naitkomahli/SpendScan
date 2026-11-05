@@ -129,8 +129,21 @@ The user is the sole developer of this project. Responsibilities cover the full 
 4. User can search transactions by title/category/note.
 5. User can filter by category chips.
 
-### Receipt Scan Flow ✅ (Completed)
-1. User opens Scan tab.
+### Bagi Saldo (Pockets) Flow ✅ (Completed)
+1. Fitur **opsional** — mati secara default. Dinyalakan lewat switch **Bagi Saldo** di layar Profil.
+2. Saat pertama nyala, kantong **kosong**; user membangun sendiri lewat layar **Kelola Kantong**.
+3. User bisa tambah / rename / hapus / urutkan kantong, serta memilih icon dan warna.
+4. Tiap kantong bisa diberi **jatah saldo** lewat layar **Bagi Saldo** (alokasi sekali, bukan bulanan).
+5. Saat Bagi Saldo **aktif**, form pengeluaran memakai daftar kantong (bukan kategori) dan user **wajib** memilih satu kantong.
+6. Saat Bagi Saldo **mati**, form pengeluaran memakai **8 kategori default**.
+7. Menghapus kantong → transaksinya tidak hilang, jadi **"Tanpa Kantong"** (bucket virtual, tidak bisa dipilih manual).
+8. Home menampilkan section kantong hanya saat fitur aktif, lengkap dengan sisa jatah dan jumlah terpakai.
+
+### Receipt Scan Flow ❌ (Disabled)
+> Fitur scan struk **dimatikan** (user jarang memakainya). Kode layar tetap disimpan untuk kemungkinan diaktifkan lagi.
+> Penyebab: Groq menonaktifkan semua model vision, sehingga `meta-llama/llama-4-scout-17b-16e-instruct` tidak lagi valid. Parser backend kini melempar error nyata (429/502) alih-alih diam-diam mengembalikan hasil kosong.
+
+1. ~~User opens Scan tab.~~
 2. User taps **"Ambil Gambar"** → modal pilihan: Kamera / Galeri / Batal.
 3. User takes or selects receipt photo.
 4. Image preview appears.
@@ -177,6 +190,10 @@ The user is the sole developer of this project. Responsibilities cover the full 
 - Item review screen (edit, delete, add items).
 - Batch save multiple transactions from one receipt.
 - Image upload to Supabase Storage.
+- Bagi Saldo: fitur kantong opsional dengan kantong custom (nama/icon/warna/urutan).
+- Layar **Kelola Kantong** (tambah/ubah/hapus/jatah).
+- Pengeluaran wajib pilih kantong saat fitur aktif; kategori default saat mati.
+- Bucket **"Tanpa Kantong"** untuk transaksi yang kantongnya dihapus.
 
 ### ❌ Remaining
 - Better statistics / yearly comparison.
@@ -185,6 +202,7 @@ The user is the sole developer of this project. Responsibilities cover the full 
 - Dark mode.
 - Export CSV/PDF.
 - Multi-device sync.
+- Re-enable receipt scan (butuh provider vision baru, mis. Gemini).
 
 ## 9. Functional Requirements
 
@@ -316,7 +334,9 @@ The user is the sole developer of this project. Responsibilities cover the full 
 - Tapping outside modal closes month picker.
 - Works with empty data (shows flat line).
 
-### FR-008 — Scan & OCR Receipt
+### FR-008 — Scan & OCR Receipt ❌ (Disabled)
+> Dimatikan di v1.2.0. Tab Scan dihapus dari navigasi dan tombol scan dihapus dari form tambah transaksi. Endpoint `/api/receipts/scan` masih ada, tapi butuh provider vision baru.
+
 **Description:** User can scan a receipt and the app extracts individual items using OCR + AI parsing.
 
 **Requirements:**
@@ -391,6 +411,26 @@ The user is the sole developer of this project. Responsibilities cover the full 
 - Failed API requests show useful messages.
 - Token expiry redirects to login.
 
+### FR-012 — Bagi Saldo & Custom Pockets
+**Description:** User can optionally split their balance into custom pockets, which replace categories for grouping expenses.
+
+**Requirements:**
+- Fitur opsional: switch **Bagi Saldo** di Profil, tersimpan di `users.pockets_enabled`.
+- Kantong sepenuhnya custom: jumlah bebas, nama/icon/warna/urutan ditentukan user.
+- Layar **Kelola Kantong**: tambah, ubah, hapus, dan atur jatah.
+- Saat aktif: form pengeluaran memakai daftar kantong dan **wajib** memilih kantong.
+- Saat mati: form pengeluaran memakai 8 kategori default.
+- Menghapus kantong → transaksi terkait jadi **"Tanpa Kantong"** (FK `ON DELETE SET NULL`); data tidak hilang.
+- Home menampilkan section kantong hanya saat fitur aktif (jatah, terpakai, sisa).
+- Nama kantong unik per user (ditolak bila duplikat).
+- Guard: fitur aktif tapi kantong masih 0 → form menampilkan ajakan "Buat kantong dulu".
+
+**Acceptance Criteria:**
+- Toggle on/off langsung mengubah mode form pengeluaran.
+- Transaksi lama tetap tampil dengan nama kantong terbaru setelah rename.
+- Menghapus kantong tidak menghapus transaksi.
+- `GET /api/pockets` mengembalikan `{ enabled, pockets: [...] }`.
+
 ## 10. Data Model
 
 ### Transaction Object
@@ -402,6 +442,7 @@ The user is the sole developer of this project. Responsibilities cover the full 
   title: 'string',
   amount: 25000,
   category: 'Food & Drink | Pemasukan | ...',
+  pocketId: 'uuid | null',
   transactionDate: 'YYYY-MM-DD',
   note: 'string | null',
   receiptImageUrl: 'string | null',
@@ -420,7 +461,21 @@ The user is the sole developer of this project. Responsibilities cover the full 
   id: 'string',
   name: 'string',
   email: 'string',
+  pocketsEnabled: 'boolean',
   createdAt: 'ISO datetime string'
+}
+```
+
+### Pocket Object
+
+```js
+{
+  id: 'uuid',
+  name: 'string',
+  icon: 'string (Ionicons name)',
+  color: 'string (hex)',
+  allocated: 500000,
+  sortOrder: 1
 }
 ```
 
@@ -465,6 +520,7 @@ The user is the sole developer of this project. Responsibilities cover the full 
 | name | text | User display name |
 | email | text | Unique |
 | password_hash | text | Managed by bcryptjs |
+| pockets_enabled | boolean | Default `false`; toggle fitur Bagi Saldo |
 | created_at | timestamp | Auto timestamp |
 
 ### `transactions`
@@ -482,8 +538,25 @@ The user is the sole developer of this project. Responsibilities cover the full 
 | raw_ocr_text | text | Optional |
 | source | text | `manual` or `ocr` |
 | type | varchar(10) | `income` or `expense`, default `expense` |
+| pocket_id | uuid | FK ke `pockets`, `ON DELETE SET NULL`, optional. Null = "Tanpa Kantong" |
 | created_at | timestamp | Auto timestamp |
 | updated_at | timestamp | Auto timestamp |
+
+### `pockets`
+
+| Field | Type | Notes |
+|---|---|---|
+| id | uuid | Primary key |
+| user_id | uuid | Foreign key to users |
+| name | text | Required, unik per user |
+| icon | text | Ionicons name, default `wallet` |
+| color | text | Hex color, default `#2F6B4F` |
+| allocated | numeric | Jatah saldo, default 0 |
+| sort_order | integer | Urutan tampil, default 0 |
+| created_at | timestamp | Auto timestamp |
+| updated_at | timestamp | Auto timestamp |
+
+> Kolom lama `key` (dari skema awal) sudah tidak wajib lagi (`DROP NOT NULL`); constraint unik lama `(user_id, key)` diganti `(user_id, name)`.
 
 ## 12. API Contract
 
@@ -512,7 +585,7 @@ Login/register response:
   "success": true,
   "message": "Login successful",
   "data": {
-    "user": { "id": "uuid", "name": "...", "email": "..." },
+    "user": { "id": "uuid", "name": "...", "email": "...", "pockets_enabled": false },
     "token": "jwt..."
   }
 }
@@ -528,6 +601,16 @@ PUT    /api/transactions/:id
 DELETE /api/transactions/:id
 ```
 
+### Pocket Endpoints (require Bearer token)
+
+```
+GET    /api/pockets            → { enabled: boolean, pockets: [Pocket] }
+POST   /api/pockets            → body: { name, icon, color, allocated }
+PATCH  /api/pockets/settings   → body: { enabled: boolean }   (toggle Bagi Saldo)
+PATCH  /api/pockets/:id        → body: { name?, icon?, color?, allocated?, sortOrder? }
+DELETE /api/pockets/:id        → transaksi terkait jadi "Tanpa Kantong"
+```
+
 ### Create Transaction Request
 
 ```json
@@ -538,7 +621,8 @@ DELETE /api/transactions/:id
   "transactionDate": "2026-06-15",
   "note": "Nasi ayam",
   "source": "manual",
-  "type": "expense"
+  "type": "expense",
+  "pocketId": "uuid | null"
 }
 ```
 
@@ -621,16 +705,18 @@ NavigationContainer
             │   ├── TransactionDetail
             │   ├── EditTransaction
             │   ├── Profile
-            │   └── Report
-            ├── ScanTab
-            │   └── ScanScreen (placeholder)
+            │   ├── Report
+            │   ├── Allocate (Bagi Saldo)
+            │   └── ManagePockets (Kelola Kantong)
             └── HistoryTab (Stack)
                 ├── TransactionList
                 ├── TransactionDetail
                 └── EditTransaction
 ```
 
-Tab order: Home (left) → Scan (center) → History (right).
+Tab order: Home (left) → History (right).
+
+> Tab **Scan** dihapus di v1.2.0 (fitur scan struk dimatikan).
 
 ## 15. File Structure
 
@@ -648,6 +734,7 @@ SpendScan/
 │   │   ├── controllers/
 │   │   │   ├── authController.js
 │   │   │   ├── transactionController.js
+│   │   │   ├── pocketController.js
 │   │   │   └── receiptController.js
 │   │   ├── services/
 │   │   │   └── llmParser.js
@@ -657,9 +744,12 @@ SpendScan/
 │   │   ├── routes/
 │   │   │   ├── auth.js
 │   │   │   ├── transactions.js
+│   │   │   ├── pockets.js
 │   │   │   └── receipts.js
 │   │   └── db/
-│   │       └── schema.sql
+│   │       ├── schema.sql
+│   │       ├── migration_pockets.sql
+│   │       └── migration_pockets_v2.sql
 │   └── ...
 ├── docs/
 │   ├── PRD.md
@@ -672,7 +762,8 @@ SpendScan/
     │   └── Skeleton.jsx
     ├── constants/
     │   ├── colors.js
-    │   └── categories.js
+    │   ├── categories.js
+    │   └── pockets.js
     ├── contexts/
     │   └── AuthContext.js
     ├── data/
@@ -688,10 +779,13 @@ SpendScan/
     │   ├── LoginScreen.jsx
     │   ├── ProfileScreen.jsx
     │   ├── ReportScreen.jsx
+    │   ├── AllocateScreen.jsx
+    │   ├── ManagePocketsScreen.jsx
     │   └── ScanScreen.jsx
     ├── services/
     │   ├── api.js
     │   ├── authService.js
+    │   ├── pocketService.js
     │   └── transactionService.js
     └── utils/
         └── formatCurrency.js
@@ -777,6 +871,16 @@ SpendScan/
 - Screenshots.
 - Demo video.
 
+### Phase 14 ✅ — Bagi Saldo & Custom Pockets (v1.2.0)
+- Redesign color palette (warm green/cream).
+- Migrasi DB: `pockets` custom + `users.pockets_enabled` + `transactions.pocket_id`.
+- Backend: CRUD kantong + endpoint toggle.
+- Layar **Kelola Kantong** (nama/icon/warna/jatah).
+- Toggle Bagi Saldo di Profil.
+- Home/Allocate/Add/Edit/Report/History sadar kantong.
+- Bucket "Tanpa Kantong" untuk transaksi tanpa kantong.
+- Matikan fitur scan struk + perbaiki bug-nya.
+
 ## 17. Mobile Service Layer
 
 ### Structure
@@ -785,6 +889,7 @@ SpendScan/
 src/services/
 ├── api.js              ← API client (base URL, token, headers, error handling)
 ├── authService.js      ← login(), register()
+├── pocketService.js    ← getPockets, createPocket, updatePocket, deletePocket, setPocketsEnabled
 └── transactionService.js ← getAll, getById, create, update, deleteById, scanReceipt
 ```
 
@@ -807,6 +912,14 @@ transactionService.deleteById(id)        // DELETE /api/transactions/:id → tru
 transactionService.scanReceipt(image)    // POST /api/receipts/scan → OCR result
 ```
 
+```js
+pocketService.getPockets()                 // GET /api/pockets → { enabled, pockets }
+pocketService.createPocket({ name, icon, color, allocated })
+pocketService.updatePocket(id, patch)      // PATCH /api/pockets/:id
+pocketService.deletePocket(id)             // DELETE /api/pockets/:id
+pocketService.setPocketsEnabled(enabled)   // PATCH /api/pockets/settings
+```
+
 ## 18. Validation Rules
 
 ### Transaction Form
@@ -815,6 +928,7 @@ transactionService.scanReceipt(image)    // POST /api/receipts/scan → OCR resu
 - `amount` is required.
 - `amount` must be a positive number.
 - `category` is required (auto-set for income).
+- Saat **Bagi Saldo aktif**, `pocketId` wajib (menggantikan `category`); `category` di-mirror dari nama kantong.
 - `transactionDate` is required.
 - `note` is optional.
 
@@ -892,7 +1006,8 @@ A feature is considered done when:
 - [x] Profile screen: user info + logout.
 - [x] Avatar navigates to Profile.
 - [x] Laporan button navigates to Report.
-- [x] Bottom tabs: Home→Scan→History.
+- [x] Bottom tabs: Home→History (tab Scan dihapus di v1.2.0).
+- [x] Bagi Saldo: toggle di Profil, Kelola Kantong, wajib pilih kantong saat aktif, bucket "Tanpa Kantong".
 - [x] Loading skeletons appear.
 - [x] Empty state shows when no data.
 - [x] Network error shows retry option.
@@ -905,23 +1020,25 @@ A feature is considered done when:
 - [x] Get transaction by ID.
 - [x] Update transaction.
 - [x] Delete transaction.
+- [x] Pocket CRUD + endpoint toggle Bagi Saldo (`/api/pockets`, `/api/pockets/settings`).
+- [x] Transactions accept/return `pocket_id`.
 - [x] API returns `{ success, message, data }` format.
 
 ## 23. Future Enhancements
-- Receipt scan with OCR (ScanScreen + backend integration).
+- Re-enable receipt scan with a working vision provider (mis. Gemini).
 - Image picker for receipt upload.
 - OCR confirmation screen with pre-filled form.
 - Year-over-year comparison.
-- Budget limit per category.
+- Budget limit per category (dan per kantong).
+- Alokasi kantong per bulan (reset bulanan).
 - Export to CSV/PDF.
 - Push notifications.
 - Multi-device sync.
 - Dark mode.
-- Better OCR parsing with category detection.
 
 ## 24. Next Recommended Task
 
-All core MVPs are completed. The next practical task is **Phase 13 — Portfolio Polish**:
+Fitur inti + Bagi Saldo selesai (v1.2.0). Berikutnya **Phase 13 — Portfolio Polish**:
 
 1. Create `README.md` with project overview, tech stack, screenshots, and setup guide.
 2. Add Splash Screen (`expo-splash-screen`) with SpendScan logo.

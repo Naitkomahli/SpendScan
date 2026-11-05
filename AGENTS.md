@@ -65,6 +65,7 @@ Primary focus areas (mobile):
   - Replaces Tesseract.js (removed in deployment refactor)
   - Accepts base64 image directly, returns structured JSON (items, merchant, date)
   - ~1-2s response time, well within Vercel 10s limit
+  - **Status: DISABLED (v1.2.0)** — Groq menonaktifkan semua model vision, model di atas tidak lagi valid. Tab Scan & tombol scan sudah dihapus dari app. `ScanScreen.jsx` + endpoint `/api/receipts/scan` masih ada untuk diaktifkan lagi nanti (butuh provider vision baru, mis. Gemini). `llmParser.js` kini melempar error nyata (429/502), bukan silent empty.
 
 ### Deployment
 - **Hosting:** Vercel (free Hobby plan, no credit card required)
@@ -147,20 +148,30 @@ SpendScan/
 │   │   ├── TransactionListScreen.jsx
 │   │   ├── TransactionDetailScreen.jsx
 │   │   ├── AddTransactionScreen.jsx
-│   │   └── EditTransactionScreen.jsx
+│   │   ├── EditTransactionScreen.jsx
+│   │   ├── ReportScreen.jsx
+│   │   ├── ProfileScreen.jsx
+│   │   ├── AllocateScreen.jsx
+│   │   ├── ManagePocketsScreen.jsx
+│   │   └── ScanScreen.jsx      (disabled)
 │   ├── components/
 │   │   ├── TransactionCard.jsx
 │   │   ├── CategoryBadge.jsx
+│   │   ├── PocketCard.jsx
 │   │   └── EmptyState.jsx
 │   ├── navigation/
 │   │   └── AppNavigator.jsx
 │   ├── services/
+│   │   ├── api.js
+│   │   ├── authService.js
+│   │   ├── pocketService.js
 │   │   └── transactionService.js
 │   ├── data/
 │   │   └── mockTransactions.js
 │   ├── constants/
 │   │   ├── colors.js
-│   │   └── categories.js
+│   │   ├── categories.js
+│   │   └── pockets.js
 │   └── utils/
 │       └── formatCurrency.js
 ├── App.js
@@ -178,6 +189,7 @@ Use this transaction shape consistently in mock data, screens, services, and bac
   title: 'Makan Siang',
   amount: 25000,
   category: 'Food & Drink',
+  pocketId: null, // UUID kantong saat Bagi Saldo aktif, null = Tanpa Kantong
   transactionDate: '2026-06-15',
   note: 'Nasi ayam',
   receiptImageUrl: null,
@@ -189,6 +201,8 @@ Use this transaction shape consistently in mock data, screens, services, and bac
 ```
 
 ## 8. Default Categories
+
+Dipakai saat fitur **Bagi Saldo MATI**. Saat Bagi Saldo **AKTIF**, pengeluaran dikelompokkan pakai **kantong custom** milik user, bukan daftar ini.
 
 ```js
 export const CATEGORIES = [
@@ -269,7 +283,12 @@ GET    /transactions/:id
 POST   /transactions
 PUT    /transactions/:id
 DELETE /transactions/:id
-POST   /receipts/scan
+POST   /receipts/scan        (disabled)
+GET    /pockets              → { enabled, pockets:[...] }
+POST   /pockets
+PATCH  /pockets/settings     → { enabled }
+PATCH  /pockets/:id
+DELETE /pockets/:id
 ```
 
 Recommended response style:
@@ -313,14 +332,26 @@ Error response:
 
 ### `AddTransactionScreen.jsx`
 - Manual form input for title, amount, category, date, and note.
-- Optional receipt image upload for future OCR flow.
 - Validate required fields before saving.
+- Saat **Bagi Saldo aktif**: tampilkan picker **kantong** (wajib); saat mati: picker **kategori default**.
 
 ### `EditTransactionScreen.jsx`
 - Load existing transaction by ID.
 - Pre-fill form.
 - Allow update.
 - Return to detail/list after successful save.
+
+### `AllocateScreen.jsx`
+- Atur jatah saldo per kantong (dinamis, sekali set).
+- Guard: kalau belum ada kantong, arahkan ke Kelola Kantong.
+
+### `ManagePocketsScreen.jsx`
+- Tambah / ubah / hapus kantong + jatah, pilih icon & warna.
+- Hapus kantong → transaksinya jadi "Tanpa Kantong".
+
+### `ProfileScreen.jsx`
+- Info user + logout.
+- Switch **Bagi Saldo** + pintu masuk **Kelola Kantong**.
 
 ## 14. Development Phases
 
@@ -332,17 +363,22 @@ Error response:
 6. Build `TransactionListScreen` and `TransactionDetailScreen`.
 7. Build `EditTransactionScreen` and delete confirmation.
 8. Connect to backend by replacing mock service calls with real API calls.
-9. Add receipt upload and OCR flow.
-10. Polish UI and prepare portfolio/demo.
+9. Add receipt upload and OCR flow. (dimatikan di v1.2.0)
+10. Build `ReportScreen` and `ProfileScreen`.
+11. Redesign color palette.
+12. **Bagi Saldo**: kantong opsional + custom (CRUD, toggle, integrasi form & laporan).
+13. Polish UI and prepare portfolio/demo.
 
 ## 15. Current Status
 
-- Backend deployed to Vercel (production): `https://backend-delta-sand-64.vercel.app`
-- Groq Vision replaces Tesseract.js: single-step base64 image → structured JSON
-- All 5 mobile app screens built (Home, Add, List, Detail, Edit)
-- Receipt scan flow with camera/gallery + Groq Vision parsing works end-to-end
-- Mobile app connects to Vercel backend (BASE_URL updated in `api.js`)
-- Next milestone: Build APK via `eas build --platform android`
+- Backend deployed to Vercel (production): `https://backend-delta-sand-64.vercel.app` (v1.2.0, pocket API live)
+- Migrasi `migration_pockets_v2.sql` sudah dijalankan di Supabase
+- All mobile screens built (Home, Add, List, Detail, Edit, Report, Profile, Allocate, ManagePockets)
+- **Bagi Saldo**: fitur kantong opsional + kantong custom, toggle di Profil, e2e terverifikasi
+- Groq Vision: model tidak lagi tersedia → fitur scan **dimatikan** (tab + tombol dihapus), kode disimpan
+- Mobile app connects to Vercel backend (BASE_URL di `api.js`)
+- App version `1.2.0`, `versionCode 3`; `expo-updates` belum dipasang (tiap update perlu rebuild + reinstall)
+- Next milestone: build APK v1.2.0 via `eas build --platform android --profile preview`
 
 ## 16. AI Agent Behavior Rules
 

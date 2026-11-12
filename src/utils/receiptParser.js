@@ -7,7 +7,11 @@ const SKIP_WORDS = [
   'pajak', 'dpp', 'service', 'svc', 'service charge', 'pembulatan', 'rounding',
   'bayar', 'pembayaran', 'debit', 'kredit', 'credit', 'qris', 'edc', 'saldo',
   'sisa', 'jumlah', 'qty', 'harga', 'kasir', 'customer', 'member', 'invoice',
-  'nota', 'struk', 'no', 'terima kasih', 'thank you', 'npwp',
+  'nota', 'struk', 'no', 'terima kasih', 'thank you',
+  // Identitas toko: alamat dan kontak. Tanpa ini, baris alamat menempel ke nama item pertama.
+  'jl', 'jalan', 'raya', 'rt', 'rw', 'kel', 'kec', 'kota', 'kab', 'kabupaten',
+  'telp', 'telepon', 'hp', 'wa', 'email', 'instagram', 'ig', 'website', 'www',
+  'npwp', 'nib', 'kasir',
 ];
 
 const TAIL_PRICE = /(?:rp\.?\s*)?\d[\d.,]*\s*(?:,-)?$/i;
@@ -15,6 +19,10 @@ const TAIL_PRICE = /(?:rp\.?\s*)?\d[\d.,]*\s*(?:,-)?$/i;
 // Harga item di struk rupiah jauh di bawah ini. Angka lebih besar biasanya
 // nomor invoice / nomor transaksi, bukan harga.
 const MAX_AMOUNT = 10000000;
+
+// Nama item jarang lebih panjang dari ini. Kalau baris yang belum punya harga
+// sudah sepanjang ini, itu hampir pasti header/alamat, bukan nama item.
+const MAX_PENDING_NAME = 60;
 
 function normalizeText(text) {
   return String(text || '')
@@ -148,6 +156,7 @@ export function parseReceipt(lines) {
         continue;
       }
       pendingName = pendingName ? `${pendingName} ${name}` : name;
+      if (pendingName.length > MAX_PENDING_NAME) pendingName = name;
       continue;
     }
 

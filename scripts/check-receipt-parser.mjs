@@ -97,6 +97,26 @@ assert.deepStrictEqual(
   'normalisasi angka salah'
 );
 
+// Header toko (alamat & kontak) tidak boleh jadi item, dan tidak boleh
+// menempel ke nama item pertama.
+const withHeader = parseReceipt([
+  'WARUNG BAROKAH',
+  'Jl. Raya Darmo No. 12',
+  'RT 04 / RW 07, Kel. Sawunggaling',
+  'Kec. Wonokromo, Kota Surabaya',
+  'Telp. 031-5678901  WA 0812-3456-7890',
+  'instagram @warungbarokah',
+  '05/04/2026 19:12',
+  'Nasi Rames 15.000',
+  'Es Jeruk 5.000',
+  'TOTAL 20.000',
+]);
+assert.deepStrictEqual(
+  withHeader.items.map((i) => i.name),
+  ['Nasi Rames', 'Es Jeruk'],
+  `header bocor jadi item: ${JSON.stringify(withHeader.items.map((i) => i.name))}`
+);
+
 console.log('OK  merchant:', wok.merchant);
 console.log('OK  tanggal :', wok.transactionDate);
 console.log('OK  item    :', wok.items.length, '| total', sum);

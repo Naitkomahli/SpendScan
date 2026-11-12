@@ -21,7 +21,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency } from '../utils/formatCurrency';
 import { EXPENSE_CATEGORIES } from '../constants/categories';
 import { scanReceipt, create as createTransaction } from '../services/transactionService';
+import { isOnDeviceOcrAvailable, recognizeReceipt, shrinkImage } from '../services/ocrService';
 import { getPockets } from '../services/pocketService';
+import { parseReceipt } from '../utils/receiptParser';
 
 export default function ScanScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -109,13 +111,39 @@ export default function ScanScreen({ navigation }) {
     }
   }
 
-  async function handleScan() {
+  async function runScan(forceAi) {
     if (!image) return;
 
     setLoading(true);
     setError(null);
     try {
-      const result = await scanReceipt(image);
+      let result = null;
+
+      // Jalur utama: baca di HP, tanpa jaringan dan tanpa kuota.
+      if (!forceAi && isOnDeviceOcrAvailable()) {
+        const shrunk = await shrinkImage(image.uri);
+        const ocr = await recognizeReceipt(shrunk);
+        if (ocr) {
+          const parsed = parseReceipt(ocr.lines);
+          if (parsed.items.length > 0) {
+            result = {
+              imageUrl: image.uri,
+              rawText: ocr.text,
+              items: parsed.items,
+              merchant: parsed.merchant,
+              transactionDate: parsed.transactionDate || '',
+              source: 'ondevice',
+            };
+          }
+        }
+      }
+
+      // Cadangan: hanya dipakai kalau OCR lokal tidak dapat item, atau user minta.
+      if (!result) {
+        const ai = await scanReceipt(image);
+        result = { ...ai, source: 'ai' };
+      }
+
       setOcrResult(result);
       setItems(result.items || []);
       setShowRawText(false);
@@ -124,6 +152,14 @@ export default function ScanScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleScan() {
+    return runScan(false);
+  }
+
+  function handleScanWithAi() {
+    return runScan(true);
   }
 
   function handleReset() {
@@ -418,6 +454,25 @@ export default function ScanScreen({ navigation }) {
                 )}
               </View>
 
+              {/* Sumber hasil baca */}
+              <View style={styles.sourceBadge}>
+                <Ionicons
+                  name={ocrResult.source === 'ondevice' ? 'phone-portrait-outline' : 'cloud-outline'}
+                  size={14}
+                  color={ocrResult.source === 'ondevice' ? colors.success : colors.primary}
+                />
+                <Text
+                  style={[
+                    styles.sourceBadgeText,
+                    { color: ocrResult.source === 'ondevice' ? colors.incomeText : colors.primary },
+                  ]}
+                >
+                  {ocrResult.source === 'ondevice'
+                    ? 'Dibaca di HP · gratis & offline'
+                    : 'Dibaca AI · butuh internet'}
+                </Text>
+              </View>
+
               {/* Raw OCR Text */}
               <TouchableOpacity
                 style={styles.rawTextToggle}
@@ -512,6 +567,17 @@ export default function ScanScreen({ navigation }) {
                     <Ionicons name="arrow-forward" size={18} color="rgba(255,255,255,0.7)" />
                   </View>
                 </TouchableOpacity>
+                {ocrResult.source !== 'ai' && (
+                  <TouchableOpacity
+                    style={styles.resetLink}
+                    onPress={handleScanWithAi}
+                    disabled={saving || loading}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={16} color={colors.textSecondary} />
+                    <Text style={styles.resetLinkText}>Hasil kurang pas? Coba pakai AI</Text>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
                   style={styles.resetLink}
                   onPress={handleReset}
@@ -890,8 +956,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     fontWeight: '500',
-  },
-  resultFieldValue: {
+  },  resultFieldValue: {
     fontSize: 14,
     color: colors.text,
     fontWeight: '600',
@@ -927,6 +992,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     fontWeight: '500',
+  },
+
+  // ── Sumber hasil baca ──────────────────────────────────────────
+  sourceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    marginBottom: 10,
+  },
+  sourceBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 
   // ── Raw Text ───────────────────────────────────────────────────

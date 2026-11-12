@@ -4,6 +4,10 @@ const { createError } = require('../middleware/errorHandler');
 const client = new OpenAI({
   apiKey: process.env.LLM_API_KEY,
   baseURL: process.env.LLM_BASE_URL,
+  // Tanpa ini SDK mencoba ulang 2x dengan backoff, jadi struk yang kena kuota
+  // terasa menggantung belasan detik sebelum jatuh ke model berikutnya.
+  maxRetries: 0,
+  timeout: 9000,
 });
 
 const SYSTEM_PROMPT = `Kamu adalah parser struk belanja Indonesia.
@@ -28,19 +32,20 @@ Kembalikan HANYA JSON tanpa markdown atau teks lain:
   ]
 }`;
 
+// Diukur di production: lite ~1,1-1,8 detik, gemini-3-flash-preview ~13,7 detik.
+// Yang cepat dulu; kalau hasilnya bukan JSON valid, loop lanjut ke model berikutnya.
 const FALLBACK_MODELS = [
-  'gemini-3-flash-preview',
-  'gemini-3.5-flash-lite',
   'gemini-flash-lite-latest',
+  'gemini-3.5-flash-lite',
   'gemini-3.1-flash-lite-preview',
-  'gemini-3.6-flash',
+  'gemini-3-flash-preview',
 ];
 
 async function parseReceiptImage(base64Image, imageType) {
   const mimeType = imageType || 'image/jpeg';
   const dataUrl = `data:${mimeType};base64,${base64Image}`;
 
-  const models = [...new Set([process.env.LLM_MODEL_VISION, ...FALLBACK_MODELS].filter(Boolean))];
+  const models = [...new Set([...FALLBACK_MODELS, process.env.LLM_MODEL_VISION].filter(Boolean))];
   let lastErr = null;
 
   for (const model of models) {
@@ -58,7 +63,7 @@ async function parseReceiptImage(base64Image, imageType) {
         ],
         response_format: { type: 'json_object' },
         temperature: 0.1,
-        max_tokens: 4096,
+        max_tokens: 1500,
       });
 
       const content = completion.choices[0]?.message?.content;

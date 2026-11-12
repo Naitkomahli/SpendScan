@@ -19,7 +19,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency } from '../utils/formatCurrency';
+import { EXPENSE_CATEGORIES } from '../constants/categories';
 import { scanReceipt, create as createTransaction } from '../services/transactionService';
+import { getPockets } from '../services/pocketService';
 
 export default function ScanScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -33,6 +35,25 @@ export default function ScanScreen({ navigation }) {
   const [saving, setSaving] = useState(false);
   const [editModal, setEditModal] = useState(false);
   const [editItem, setEditItem] = useState({ index: -1, name: '', amount: '' });
+  const [pockets, setPockets] = useState([]);
+  const [pocketsEnabled, setPocketsEnabled] = useState(false);
+  const [category, setCategory] = useState('');
+  const [pocketId, setPocketId] = useState(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        const data = await getPockets();
+        if (!active) return;
+        setPockets(data.pockets);
+        setPocketsEnabled(data.enabled);
+      })();
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -159,20 +180,32 @@ export default function ScanScreen({ navigation }) {
       return;
     }
 
+    if (pocketsEnabled && !pocketId) {
+      Alert.alert('Pilih kantong', 'Pilih kantong tujuan dulu sebelum menyimpan.');
+      return;
+    }
+    if (!pocketsEnabled && !category) {
+      Alert.alert('Pilih kategori', 'Pilih kategori dulu sebelum menyimpan.');
+      return;
+    }
+
     setSaving(true);
     try {
       const transactionDate = ocrResult?.transactionDate || new Date().toISOString().split('T')[0];
       const receiptImageUrl = ocrResult?.imageUrl || image?.uri || null;
+      const merchant = ocrResult?.merchant || null;
+      const noteBase = [merchant, ocrResult?.rawText].filter(Boolean).join(' — ').substring(0, 200);
 
       for (const item of items) {
         await createTransaction({
           title: item.name,
           amount: item.amount,
-          category: 'Pokok',
+          category: pocketsEnabled ? '' : category,
           transactionDate,
-          note: receiptImageUrl ? `Scan: ${ocrResult?.rawText || ''}`.substring(0, 200) : '',
+          note: noteBase || null,
           source: 'ocr',
           type: 'expense',
+          pocketId: pocketsEnabled ? pocketId : null,
         });
       }
 
@@ -269,7 +302,7 @@ export default function ScanScreen({ navigation }) {
           {error && (
             <View style={styles.errorBox}>
               <View style={styles.errorIconWrap}>
-                <Ionicons name="alert-circle" size={20} color={colors.error} />
+                <Ionicons name="alert-circle" size={20} color={colors.danger} />
               </View>
               <View style={styles.errorContent}>
                 <Text style={styles.errorTitle}>Gagal Memproses</Text>
@@ -332,6 +365,58 @@ export default function ScanScreen({ navigation }) {
                 <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
                 <Text style={styles.addItemText}>Tambah Item</Text>
               </TouchableOpacity>
+
+              {/* Category / Pocket Picker */}
+              <View style={styles.pickerCard}>
+                <Text style={styles.pickerTitle}>
+                  {pocketsEnabled ? 'Simpan ke Kantong' : 'Kategori Pengeluaran'}
+                </Text>
+                {pocketsEnabled ? (
+                  pockets.length === 0 ? (
+                    <Text style={styles.pickerEmpty}>
+                      Belum ada kantong. Buat lewat Profil → Kelola Kantong dulu.
+                    </Text>
+                  ) : (
+                    <View style={styles.chipGrid}>
+                      {pockets.map((p) => {
+                        const isSelected = pocketId === p.id;
+                        return (
+                          <TouchableOpacity
+                            key={p.id}
+                            style={[styles.chip, isSelected && styles.chipSelected]}
+                            onPress={() => setPocketId(p.id)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.chipIcon}>{p.icon || '👝'}</Text>
+                            <Text style={[styles.chipLabel, isSelected && styles.chipLabelSelected]}>
+                              {p.name}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )
+                ) : (
+                  <View style={styles.chipGrid}>
+                    {EXPENSE_CATEGORIES.map((cat) => {
+                      const isSelected = category === cat.label;
+                      return (
+                        <TouchableOpacity
+                          key={cat.id}
+                          style={[styles.chip, isSelected && styles.chipSelected]}
+                          onPress={() => setCategory(cat.label)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.chipIcon}>{cat.icon}</Text>
+                          <Text style={[styles.chipLabel, isSelected && styles.chipLabelSelected]}>
+                            {cat.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
 
               {/* Raw OCR Text */}
               <TouchableOpacity
@@ -711,7 +796,7 @@ const styles = StyleSheet.create({
   // ── Error Box ──────────────────────────────────────────────────
   errorBox: {
     flexDirection: 'row',
-    backgroundColor: colors.errorContainer,
+    backgroundColor: colors.dangerContainer,
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
@@ -721,7 +806,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.error,
+    backgroundColor: colors.danger,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -731,12 +816,12 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.error,
+    color: colors.danger,
     marginBottom: 2,
   },
   errorText: {
     fontSize: 13,
-    color: colors.error,
+    color: colors.danger,
     lineHeight: 18,
   },
 
@@ -836,7 +921,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
-    backgroundColor: colors.surfaceContainerLow,
+    backgroundColor: colors.surface,
   },
   categoryTagText: {
     fontSize: 12,
@@ -1027,7 +1112,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   editInput: {
-    backgroundColor: colors.surfaceContainerLow,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
@@ -1045,7 +1130,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: 12,
-    backgroundColor: colors.surfaceContainerLow,
+    backgroundColor: colors.surface,
     borderRadius: 12,
   },
   editModalCancelText: {
@@ -1079,7 +1164,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.surfaceContainerHigh,
+    backgroundColor: colors.surfaceContainer,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1114,7 +1199,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.errorContainer,
+    backgroundColor: colors.dangerContainer,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1136,6 +1221,57 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.primary,
+  },
+
+  pickerCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  pickerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 10,
+  },
+  pickerEmpty: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  chipGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    gap: 4,
+  },
+  chipSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryContainer,
+  },
+  chipIcon: {
+    fontSize: 15,
+  },
+  chipLabel: {
+    fontSize: 12,
+    color: colors.text,
+    fontWeight: '500',
+  },
+  chipLabelSelected: {
+    color: colors.primary,
+    fontWeight: '700',
   },
 
   // ── No Items ───────────────────────────────────────────────────
@@ -1218,7 +1354,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     marginTop: 12,
-    backgroundColor: colors.surfaceContainerLow,
+    backgroundColor: colors.surface,
     borderRadius: 14,
   },
   modalCancelText: {

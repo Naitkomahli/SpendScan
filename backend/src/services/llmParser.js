@@ -28,49 +28,67 @@ Kembalikan HANYA JSON tanpa markdown atau teks lain:
   ]
 }`;
 
+const FALLBACK_MODELS = [
+  'gemini-3-flash-preview',
+  'gemini-3.5-flash-lite',
+  'gemini-flash-lite-latest',
+  'gemini-3.1-flash-lite-preview',
+  'gemini-3.6-flash',
+];
+
 async function parseReceiptImage(base64Image, imageType) {
-  try {
-    const mimeType = imageType || 'image/jpeg';
-    const dataUrl = `data:${mimeType};base64,${base64Image}`;
+  const mimeType = imageType || 'image/jpeg';
+  const dataUrl = `data:${mimeType};base64,${base64Image}`;
 
-    const completion = await client.chat.completions.create({
-      model: process.env.LLM_MODEL_VISION || 'meta-llama/llama-4-scout-17b-16e-instruct',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: SYSTEM_PROMPT },
-            { type: 'image_url', image_url: { url: dataUrl } },
-          ],
-        },
-      ],
-      temperature: 0.1,
-      max_tokens: 2000,
-    });
+  const models = [...new Set([process.env.LLM_MODEL_VISION, ...FALLBACK_MODELS].filter(Boolean))];
+  let lastErr = null;
 
-    const content = completion.choices[0]?.message?.content;
-    if (!content) throw new Error('No response from LLM');
+  for (const model of models) {
+    try {
+      const completion = await client.chat.completions.create({
+        model,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: SYSTEM_PROMPT },
+              { type: 'image_url', image_url: { url: dataUrl } },
+            ],
+          },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.1,
+        max_tokens: 4096,
+      });
 
-    // Bersihkan markdown JSON jika ada
-    let cleanJson = content.trim();
-    if (cleanJson.startsWith('```')) {
-      cleanJson = cleanJson.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+      const content = completion.choices[0]?.message?.content;
+      if (!content) throw new Error('No response from LLM');
+
+      let cleanJson = content.trim();
+      const jsonMatch = cleanJson.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanJson = jsonMatch[0];
+      }
+
+      const parsed = JSON.parse(cleanJson);
+      return {
+        items: parsed.items || [],
+        merchant: parsed.merchant || null,
+        transactionDate: parsed.date || null,
+        rawResponse: content,
+      };
+    } catch (err) {
+      console.warn(`Model ${model} failed:`, err.message);
+      lastErr = err;
+      continue;
     }
-
-    const parsed = JSON.parse(cleanJson);
-    return {
-      items: parsed.items || [],
-      merchant: parsed.merchant || null,
-      transactionDate: parsed.date || null,
-      rawResponse: content,
-    };
-  } catch (err) {
-    console.error('LLM Vision parse error:', err.message);
-    if (err.message.includes('quota') || err.message.includes('429')) {
-      throw createError(429, 'Kuota pembaca struk habis. Coba lagi nanti.');
-    }
-    throw createError(502, `Gagal membaca struk: ${err.message}`);
   }
+
+  console.error('All vision models failed. Last error:', lastErr?.message);
+  if (lastErr && (lastErr.message.includes('quota') || lastErr.message.includes('429'))) {
+    throw createError(429, 'Kuota pembaca struk habis. Coba lagi nanti.');
+  }
+  throw createError(502, `Gagal membaca struk: ${lastErr?.message || 'Unknown error'}`);
 }
 
 module.exports = { parseReceiptImage };

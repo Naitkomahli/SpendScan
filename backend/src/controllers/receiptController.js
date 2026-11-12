@@ -19,9 +19,24 @@ async function scanFromBase64(req, res, next) {
       throw createError(400, 'Image data is required');
     }
 
-    const mimeType = imageType || 'image/jpeg';
+    let mimeType = imageType || 'image/jpeg';
+    // Normalisasi MIME type: alias "image", "image/jpg", "image/jpeg" -> "image/jpeg"
+    const normalizeMime = (t) => {
+      if (!t) return 'image/jpeg';
+      const low = t.toLowerCase().trim();
+      if (/^image$/i.test(low)) return 'image/jpeg';
+      if (/^image\/jpeg/i.test(low)) return 'image/jpeg';
+      if (/^image\/jpg/i.test(low)) return 'image/jpeg';
+      if (/^image\/png/i.test(low)) return 'image/png';
+      if (/^image\/webp/i.test(low)) return 'image/webp';
+      if (/^image\/heic/i.test(low)) return 'image/jpeg';
+      return low;
+    };
+    mimeType = normalizeMime(mimeType);
+
+    // Validasi: harus mulai dengan image/
     if (!mimeType || !mimeType.startsWith('image')) {
-      throw createError(400, 'Only image files are allowed');
+      throw createError(400, 'Invalid image MIME type');
     }
 
     const buffer = Buffer.from(image, 'base64');

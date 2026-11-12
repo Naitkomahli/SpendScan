@@ -27,7 +27,7 @@ Responsibilities across the full stack:
 - Build the React Native + Expo mobile app (all screens, components, navigation)
 - Build the backend API using Node.js + Express
 - Manage database using Supabase/PostgreSQL and file storage using Supabase Storage
-- Set up AI-powered receipt parsing using Groq Vision API
+- Set up AI-powered receipt parsing using Gemini Vision API
 - Deploy and maintain backend on Vercel
 - Keep API calls isolated in the service layer for easy maintenance
 
@@ -61,11 +61,11 @@ Primary focus areas (mobile):
 - Express.js (v5)
 - Supabase/PostgreSQL
 - Supabase Storage
-- **Groq Vision** (`meta-llama/llama-4-scout-17b-16e-instruct`) for receipt OCR parsing
-  - Replaces Tesseract.js (removed in deployment refactor)
+- **Google Gemini Vision** (`gemini-3.6-flash`) via OpenAI-compatible endpoint for receipt OCR parsing
+  - Replaces Groq Vision (Groq disabled all vision models)
   - Accepts base64 image directly, returns structured JSON (items, merchant, date)
-  - ~1-2s response time, well within Vercel 10s limit
-  - **Status: DISABLED (v1.2.0)** — Groq menonaktifkan semua model vision, model di atas tidak lagi valid. Tab Scan & tombol scan sudah dihapus dari app. `ScanScreen.jsx` + endpoint `/api/receipts/scan` masih ada untuk diaktifkan lagi nanti (butuh provider vision baru, mis. Gemini). `llmParser.js` kini melempar error nyata (429/502), bukan silent empty.
+  - Response time ~1-2s, well within Vercel limits
+  - **Status: ACTIVE** — Tab Scan Struk aktif di Bottom Tab navigator. Pengguna bisa foto/unggah struk, edit item hasil scan, dan simpan langsung ke kantong/kategori.
 
 ### Deployment
 - **Hosting:** Vercel (free Hobby plan, no credit card required)
@@ -153,7 +153,7 @@ SpendScan/
 │   │   ├── ProfileScreen.jsx
 │   │   ├── AllocateScreen.jsx
 │   │   ├── ManagePocketsScreen.jsx
-│   │   └── ScanScreen.jsx      (disabled)
+│   │   └── ScanScreen.jsx
 │   ├── components/
 │   │   ├── TransactionCard.jsx
 │   │   ├── CategoryBadge.jsx
@@ -283,7 +283,7 @@ GET    /transactions/:id
 POST   /transactions
 PUT    /transactions/:id
 DELETE /transactions/:id
-POST   /receipts/scan        (disabled)
+POST   /receipts/scan
 GET    /pockets              → { enabled, pockets:[...] }
 POST   /pockets
 PATCH  /pockets/settings     → { enabled }

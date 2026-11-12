@@ -17,6 +17,7 @@ import ReportScreen from '../screens/ReportScreen';
 import LoginScreen from '../screens/LoginScreen';
 import AllocateScreen from '../screens/AllocateScreen';
 import ManagePocketsScreen from '../screens/ManagePocketsScreen';
+import ScanScreen from '../screens/ScanScreen';
 
 // ----- Stack Navigator untuk Tab Home -----
 const HomeStack = createNativeStackNavigator();
@@ -98,6 +99,7 @@ const Tab = createBottomTabNavigator();
 
 const TAB_ICONS = {
   HomeTab: { focused: 'home-sharp', unfocused: 'home-outline' },
+  ScanTab: { focused: 'camera-sharp', unfocused: 'camera-outline' },
   HistoryTab: { focused: 'receipt-sharp', unfocused: 'receipt-outline' },
 };
 
@@ -141,6 +143,7 @@ export default function AppNavigator() {
       })}
     >
       <Tab.Screen name="HomeTab" component={HomeStackScreen} options={{ title: 'Home' }} />
+      <Tab.Screen name="ScanTab" component={ScanScreen} options={{ title: 'Scan Struk' }} />
       <Tab.Screen name="HistoryTab" component={HistoryStackScreen} options={{ title: 'History' }} />
     </Tab.Navigator>
   );

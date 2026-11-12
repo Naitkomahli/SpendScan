@@ -75,7 +75,14 @@ export async function scanReceipt(image) {
     encoding: 'base64',
   });
 
-  const imageType = image.type || 'image/jpeg';
+  // Resolve MIME type: gunakan asset.mimeType dulu, kalau undefined/blank baca dari uri, fallback jpeg
+  let imageType = image.mimeType;
+  if (!imageType) {
+    // Coba ekstrak dari uri (misal .jpg, .png)
+    const extMatch = image.uri.match(/\.([a-z0-9]+)(?:[\?\#])?$/i);
+    imageType = extMatch ? `image/${extMatch[1]}` : null;
+  }
+  imageType = imageType || 'image/jpeg';
 
   const data = await apiRequest('/receipts/scan', {
     method: 'POST',
@@ -89,6 +96,7 @@ export async function scanReceipt(image) {
     imageUrl: data.receiptImageUrl || image.uri,
     rawText: data.rawOcrText || '',
     items: data.parsed?.items || [],
+    merchant: data.parsed?.merchant || null,
     transactionDate: data.parsed?.transactionDate || '',
   };
 }

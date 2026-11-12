@@ -232,11 +232,20 @@ export default function ScanScreen({ navigation }) {
       const merchant = ocrResult?.merchant || null;
       const noteBase = [merchant, ocrResult?.rawText].filter(Boolean).join(' — ').substring(0, 200);
 
+      // Backend mewajibkan category terisi. Di mode kantong, nama kantong dipakai
+      // sebagai kategori, sama seperti form tambah transaksi manual.
+      const pocketName = pockets.find((p) => p.id === pocketId)?.name || '';
+      const categoryValue = pocketsEnabled ? pocketName : category;
+      if (!categoryValue) {
+        Alert.alert('Pilih kantong', 'Kantong yang dipilih tidak ditemukan. Pilih ulang.');
+        return;
+      }
+
       for (const item of items) {
         await createTransaction({
           title: item.name,
           amount: item.amount,
-          category: pocketsEnabled ? '' : category,
+          category: categoryValue,
           transactionDate,
           note: noteBase || null,
           source: 'ocr',

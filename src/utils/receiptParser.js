@@ -24,6 +24,10 @@ const MAX_AMOUNT = 10000000;
 // sudah sepanjang ini, itu hampir pasti header/alamat, bukan nama item.
 const MAX_PENDING_NAME = 60;
 
+// Baris kontak / layanan pelanggan. Nomor telepon di baris ini sering terbaca
+// sebagai harga, contoh di struk Indomaret: "TELP 1500280" -> item Rp1.500.280.
+const CONTACT_RE = /\b(telp|telepon|sms|kontak|contact|layanan|konsumen|call|center|whatsapp|email|instagram|website|www|cs)\b/i;
+
 function normalizeText(text) {
   return String(text || '')
     .toLowerCase()
@@ -73,6 +77,13 @@ function splitLine(text) {
   const trimmed = String(text || '').trim();
   const match = trimmed.match(/^(.*?)\s+((?:rp\.?\s*)?\d[\d.,]*\s*(?:,-)?)$/i);
   if (!match) return { name: trimmed, amount: null };
+
+  const rawNumber = match[2].replace(/[^\d]/g, '');
+  // Nomor telepon / nomor transaksi: 7 digit ke atas tanpa pemisah ribuan.
+  // Harga sebesar itu di struk hampir selalu ditulis "1.500.280".
+  if (!/[.,]/.test(match[2]) && rawNumber.length >= 7) {
+    return { name: trimmed, amount: null };
+  }
 
   const amount = toAmount(match[2]);
   const name = match[1].replace(/\s{2,}/g, ' ').trim();
@@ -147,6 +158,13 @@ export function parseReceipt(lines) {
   let pendingName = '';
 
   for (const entry of entries) {
+    // Baris kontak, atau baris berisi deretan angka panjang (NPWP, nomor
+    // transaksi), bukan bagian dari item.
+    if (CONTACT_RE.test(entry.text) || /\d{10,}/.test(entry.text)) {
+      pendingName = '';
+      continue;
+    }
+
     const { name, amount } = splitLine(entry.text);
 
     if (amount == null) {

@@ -117,6 +117,47 @@ assert.deepStrictEqual(
   `header bocor jadi item: ${JSON.stringify(withHeader.items.map((i) => i.name))}`
 );
 
+// Struk Indomaret asli: baris kontak "TELP 1500280" pernah terbaca jadi item
+// Rp1.500.280, dan baris NPWP/alamat ikut terbaca.
+const INDOMARET = [
+  'KI FINDoMARCi',
+  'RATIS ONGKIt1 JAM SAMPAL',
+  'pDOMARCOPiRISMATAMA',
+  'EOUMG MENARA',
+  'NDCMARET BOULEVARD',
+  'PANTA NDAH KAPUK',
+  'JAKARTAUTARA',
+  'NPWE 0013379946-092 000',
+  'VAL ISONGO KM.11',
+  'JL, WALISONGO KH 11, KEL. TAMBAK AJI',
+  'KEC. NGALIYAN KOTA SMARANG, 50185',
+  '9ndsmve',
+  '10.11.26-07:22/4.6.0/TNHI-1445/FAIZK/02',
+  'LE MINERALE 600 ML',
+  '1 4200',
+  'PPN',
+  'HARGA JUAL : 3,784',
+  'TOTAL BELAN JA :4,200',
+  ': DPP= 3,468 PPN: 416',
+  '4,200',
+  'TUNAI : 11,000',
+  'KEMBALI : 6,800',
+  'LAYANAN KONSUMEN',
+  'SMSWA 0811.1600.280 TELP 1500280',
+  'KONTAK@INDOMARET.CO.ID',
+  'BELANJA LEBIH MUDAH DI',
+  'KI IKINDOMARET',
+];
+const indomaret = parseReceipt(INDOMARET);
+assert.strictEqual(
+  indomaret.items.length,
+  1,
+  `struk Indomaret harus 1 item, dapat ${JSON.stringify(indomaret.items)}`
+);
+assert.strictEqual(indomaret.items[0].name, 'LE MINERALE 600 ML');
+assert.strictEqual(indomaret.items[0].amount, 4200);
+assert.strictEqual(indomaret.transactionDate, '2026-11-10');
+
 console.log('OK  merchant:', wok.merchant);
 console.log('OK  tanggal :', wok.transactionDate);
 console.log('OK  item    :', wok.items.length, '| total', sum);

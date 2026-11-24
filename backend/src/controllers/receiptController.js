@@ -64,7 +64,7 @@ async function scanFromBase64(req, res, next) {
       receiptImageUrl = urlData.publicUrl;
     }
 
-    // Parse receipt directly from image using Groq Vision
+    // Parse receipt directly from image using Gemini Vision
     const parsed = await parseReceiptImage(image, mimeType);
 
     res.json({

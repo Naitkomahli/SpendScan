@@ -44,7 +44,8 @@ Primary focus areas (mobile):
 
 ### Mobile App
 - React Native
-- Expo, target SDK: **SDK 54** for compatibility with Expo Go in this project context
+- Expo **SDK 58** (`expo ~58.0.24`, React Native 0.88.1)
+  - App uses `expo-dev-client` + native modules (`@infinitered/react-native-mlkit-text-recognition`), so **Expo Go is no longer usable** — run a development build or the `preview` APK
 - JavaScript / JSX
 - React Navigation
   - `@react-navigation/native`

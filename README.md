@@ -305,9 +305,6 @@ SpendScan/
 │       └── db/                 # schema.sql + migration_pockets*.sql
 └── docs/
     ├── PRD.md                  # Product requirements (source of truth)
-    ├── TECHNICAL.md            # Full technical overview
-    ├── STORYBOARD.md
-    ├── PORTFOLIO.md
     ├── MEMORY.md               # Build/session notes
     └── screenshots/
 ```

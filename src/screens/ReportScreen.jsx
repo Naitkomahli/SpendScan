@@ -123,7 +123,7 @@ export default function ReportScreen() {
     }
 
     const categoryBreakdown = monthTxs
-      .filter((t) => t.type === 'expense')
+      .filter((t) => t.type === 'expense' && (!pocketsEnabled || t.pocketId))
       .reduce((acc, t) => {
         const existing = acc.find((c) => c.category === t.category);
         if (existing) {
@@ -147,7 +147,7 @@ export default function ReportScreen() {
       expenseData,
       maxVal,
     };
-  }, [transactions, selectedMonth]);
+  }, [transactions, selectedMonth, pocketsEnabled]);
 
   const overallData = useMemo(() => {
     const income = transactions

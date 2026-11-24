@@ -18,6 +18,7 @@ import { getById, update } from '../services/transactionService';
 import { getPockets } from '../services/pocketService';
 
 const INCOME_CATEGORY = 'Pemasukan';
+const UNTAGGED_CATEGORY = 'Lainnya';
 
 export default function EditTransactionScreen({ route, navigation }) {
   const { id } = route.params;
@@ -79,10 +80,9 @@ export default function EditTransactionScreen({ route, navigation }) {
     setType(selectedType);
     if (selectedType === 'income') {
       setCategory(INCOME_CATEGORY);
-      setPocketId(null);
     } else {
-      setCategory('');
-      setPocketId(null);
+      const selectedPocket = pockets.find((p) => p.id === pocketId);
+      setCategory(selectedPocket ? selectedPocket.name : '');
     }
     setErrors({});
   }
@@ -100,12 +100,9 @@ export default function EditTransactionScreen({ route, navigation }) {
       newErrors.amount = 'Jumlah harus angka positif';
     }
 
-    if (!isIncome) {
-      if (pocketsEnabled) {
-        if (!pocketId) newErrors.category = 'Pilih kantong';
-      } else if (!category) {
-        newErrors.category = 'Pilih kategori';
-      }
+    // Kantong opsional: pengeluaran tanpa kantong tetap boleh disimpan.
+    if (!isIncome && !pocketsEnabled && !category) {
+      newErrors.category = 'Pilih kategori';
     }
 
     if (!transactionDate) {
@@ -120,15 +117,25 @@ export default function EditTransactionScreen({ route, navigation }) {
     if (!validate()) return;
 
     setSaving(true);
+
+    const selectedPocket = pockets.find((p) => p.id === pocketId) || null;
+    const finalCategory = isIncome
+      ? INCOME_CATEGORY
+      : pocketsEnabled
+      ? selectedPocket
+        ? selectedPocket.name
+        : UNTAGGED_CATEGORY
+      : category;
+
     try {
       await update(id, {
         title: title.trim(),
         amount: Number(amount),
-        category,
+        category: finalCategory,
         transactionDate,
         note: note.trim() || null,
         type,
-        pocketId: !isIncome && pocketsEnabled ? pocketId : null,
+        pocketId: pocketsEnabled ? pocketId : null,
       });
 
       Alert.alert('Berhasil', 'Transaksi berhasil diperbarui.', [
@@ -219,14 +226,11 @@ export default function EditTransactionScreen({ route, navigation }) {
           <Text style={styles.errorText}>{errors.amount}</Text>
         )}
 
-        {/* --- Kategori --- */}
-        <Text style={styles.label}>Kategori</Text>
-        {isIncome ? (
-          <View style={styles.incomeCategoryBox}>
-            <Text style={styles.incomeCategoryIcon}>💰</Text>
-            <Text style={styles.incomeCategoryLabel}>Pemasukan</Text>
-          </View>
-        ) : pocketsEnabled ? (
+        {/* --- Kategori / Kantong --- */}
+        <Text style={styles.label}>
+          {pocketsEnabled ? (isIncome ? 'Masuk ke Kantong (opsional)' : 'Kantong (opsional)') : 'Kategori'}
+        </Text>
+        {pocketsEnabled ? (
           <>
             {pockets.length === 0 ? (
               <TouchableOpacity
@@ -238,57 +242,62 @@ export default function EditTransactionScreen({ route, navigation }) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.pocketNoticeTitle}>Belum ada kantong</Text>
                   <Text style={styles.pocketNoticeText}>
-                    Buat kantong dulu untuk mencatat pengeluaran.
+                    Buat kantong dulu untuk membagi saldo.
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
               </TouchableOpacity>
             ) : (
-              <>
-                <View style={styles.categoryGrid}>
-                  {pockets.map((p) => {
-                    const isSelected = pocketId === p.id;
-                    const color = p.color || colors.primary;
-                    return (
-                      <TouchableOpacity
-                        key={p.id}
+              <View style={styles.categoryGrid}>
+                {pockets.map((p) => {
+                  const isSelected = pocketId === p.id;
+                  const color = p.color || colors.primary;
+                  return (
+                    <TouchableOpacity
+                      key={p.id}
+                      style={[
+                        styles.categoryItem,
+                        isSelected && { borderColor: color, backgroundColor: `${color}22` },
+                      ]}
+                      onPress={() => {
+                        const nextId = isSelected ? null : p.id;
+                        setPocketId(nextId);
+                        if (!isIncome) {
+                          const chosen = pockets.find((x) => x.id === nextId);
+                          setCategory(chosen ? chosen.name : '');
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name={p.icon || 'wallet'}
+                        size={16}
+                        color={isSelected ? color : colors.textSecondary}
+                        style={{ marginRight: 6 }}
+                      />
+                      <Text
                         style={[
-                          styles.categoryItem,
-                          isSelected && { borderColor: color, backgroundColor: `${color}22` },
+                          styles.categoryLabel,
+                          isSelected && { color, fontWeight: '600' },
                         ]}
-                        onPress={() => {
-                          setPocketId(p.id);
-                          setCategory(p.name);
-                          if (errors.category)
-                            setErrors((prev) => ({ ...prev, category: null }));
-                        }}
-                        activeOpacity={0.7}
+                        numberOfLines={1}
                       >
-                        <Ionicons
-                          name={p.icon || 'wallet'}
-                          size={16}
-                          color={isSelected ? color : colors.textSecondary}
-                          style={{ marginRight: 6 }}
-                        />
-                        <Text
-                          style={[
-                            styles.categoryLabel,
-                            isSelected && { color, fontWeight: '600' },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {p.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                {errors.category && (
-                  <Text style={styles.errorText}>{errors.category}</Text>
-                )}
-              </>
+                        {p.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             )}
+            <Text style={styles.hintText}>
+              Boleh dikosongkan — transaksi tetap masuk Total Saldo.
+            </Text>
           </>
+        ) : isIncome ? (
+          <View style={styles.incomeCategoryBox}>
+            <Text style={styles.incomeCategoryIcon}>💰</Text>
+            <Text style={styles.incomeCategoryLabel}>Pemasukan</Text>
+          </View>
         ) : (
           <>
             <View style={styles.categoryGrid}>
@@ -510,6 +519,12 @@ const styles = StyleSheet.create({
   categoryLabelSelected: {
     color: colors.primary,
     fontWeight: '600',
+  },
+  hintText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 8,
+    marginLeft: 4,
   },
   incomeCategoryBox: {
     flexDirection: 'row',

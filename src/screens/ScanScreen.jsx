@@ -25,6 +25,8 @@ import { isOnDeviceOcrAvailable, recognizeReceipt, shrinkImage } from '../servic
 import { getPockets } from '../services/pocketService';
 import { parseReceipt } from '../utils/receiptParser';
 
+const UNTAGGED_CATEGORY = 'Lainnya';
+
 export default function ScanScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [image, setImage] = useState(null);
@@ -216,10 +218,6 @@ export default function ScanScreen({ navigation }) {
       return;
     }
 
-    if (pocketsEnabled && !pocketId) {
-      Alert.alert('Pilih kantong', 'Pilih kantong tujuan dulu sebelum menyimpan.');
-      return;
-    }
     if (!pocketsEnabled && !category) {
       Alert.alert('Pilih kategori', 'Pilih kategori dulu sebelum menyimpan.');
       return;
@@ -234,12 +232,9 @@ export default function ScanScreen({ navigation }) {
 
       // Backend mewajibkan category terisi. Di mode kantong, nama kantong dipakai
       // sebagai kategori, sama seperti form tambah transaksi manual.
+      // Tanpa kantong tetap sah — transaksi hanya masuk Total Saldo.
       const pocketName = pockets.find((p) => p.id === pocketId)?.name || '';
-      const categoryValue = pocketsEnabled ? pocketName : category;
-      if (!categoryValue) {
-        Alert.alert('Pilih kantong', 'Kantong yang dipilih tidak ditemukan. Pilih ulang.');
-        return;
-      }
+      const categoryValue = pocketsEnabled ? pocketName || UNTAGGED_CATEGORY : category;
 
       for (const item of items) {
         await createTransaction({
@@ -414,7 +409,7 @@ export default function ScanScreen({ navigation }) {
               {/* Category / Pocket Picker */}
               <View style={styles.pickerCard}>
                 <Text style={styles.pickerTitle}>
-                  {pocketsEnabled ? 'Simpan ke Kantong' : 'Kategori Pengeluaran'}
+                  {pocketsEnabled ? 'Simpan ke Kantong (opsional)' : 'Kategori Pengeluaran'}
                 </Text>
                 {pocketsEnabled ? (
                   pockets.length === 0 ? (
@@ -429,7 +424,7 @@ export default function ScanScreen({ navigation }) {
                           <TouchableOpacity
                             key={p.id}
                             style={[styles.chip, isSelected && styles.chipSelected]}
-                            onPress={() => setPocketId(p.id)}
+                            onPress={() => setPocketId(isSelected ? null : p.id)}
                             activeOpacity={0.7}
                           >
                             <Text style={styles.chipIcon}>{p.icon || '👝'}</Text>

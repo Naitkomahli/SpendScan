@@ -73,8 +73,12 @@ Primary focus areas (mobile):
 - **Framework:** Vercel Express preset (auto-wraps Express app, no `serverless-http` needed)
 - **No `api/` directory** — Vercel launches Express directly via `server.js`
 - **Config:** `backend/vercel.json` — route all requests `/(.*)` to Express
-- **Env vars:** 9 variables set via `vercel env add` (SUPABASE, JWT, Groq API keys)
-- **Deploy command:** `vercel --cwd backend --prod --yes --force`
+- **Env vars:** 9 variables set via `vercel env add` (SUPABASE, JWT, Gemini API keys)
+- **Root Directory:** project Vercel sudah di-set ke `backend`, jadi perintah `vercel --cwd backend` akan gagal (`backend/backend` tidak ada).
+- **Deploy command:** jalankan dari root repo:
+  ```bash
+  vercel --prod --yes --force
+  ```
 
 ## 5. Important Setup Notes
 
@@ -151,8 +155,8 @@ SpendScan/
 │   │   ├── EditTransactionScreen.jsx
 │   │   ├── ReportScreen.jsx
 │   │   ├── ProfileScreen.jsx
-│   │   ├── AllocateScreen.jsx
 │   │   ├── ManagePocketsScreen.jsx
+│   │   ├── PocketDetailScreen.jsx
 │   │   └── ScanScreen.jsx
 │   ├── components/
 │   │   ├── TransactionCard.jsx
@@ -189,7 +193,7 @@ Use this transaction shape consistently in mock data, screens, services, and bac
   title: 'Makan Siang',
   amount: 25000,
   category: 'Food & Drink',
-  pocketId: null, // UUID kantong saat Bagi Saldo aktif, null = Tanpa Kantong
+  pocketId: null, // UUID kantong, OPSIONAL (null = transaksi tanpa kantong, tetap dihitung di Total Saldo)
   transactionDate: '2026-06-15',
   note: 'Nasi ayam',
   receiptImageUrl: null,
@@ -203,6 +207,8 @@ Use this transaction shape consistently in mock data, screens, services, and bac
 ## 8. Default Categories
 
 Dipakai saat fitur **Bagi Saldo MATI**. Saat Bagi Saldo **AKTIF**, pengeluaran dikelompokkan pakai **kantong custom** milik user, bukan daftar ini.
+
+Kantong **opsional**: pemasukan dan pengeluaran boleh tidak punya kantong. Transaksi tanpa kantong saat Bagi Saldo aktif disimpan dengan `category = 'Lainnya'`, tidak muncul sebagai kartu/bucket kantong, tapi tetap dihitung di Total Saldo.
 
 ```js
 export const CATEGORIES = [
@@ -284,12 +290,26 @@ POST   /transactions
 PUT    /transactions/:id
 DELETE /transactions/:id
 POST   /receipts/scan
-GET    /pockets              → { enabled, pockets:[...] }
-POST   /pockets
+GET    /pockets              → { enabled, pockets:[{ id, name, icon, color, balance, sortOrder }] }
+POST   /pockets              → { name, icon, color, balance }
 PATCH  /pockets/settings     → { enabled }
-PATCH  /pockets/:id
+PATCH  /pockets/:id          → { name?, icon?, color?, balance? }
 DELETE /pockets/:id
+GET    /pockets/:id/transactions → transaksi yang bertag ke kantong itu
 ```
+
+### Aturan saldo (berlaku setelah revisi 24 Nov 2026)
+
+```text
+Total Saldo   = Σ pemasukan − Σ pengeluaran          (read-only, tidak bisa diedit)
+Saldo kantong = base_balance + Σ pemasukan bertag − Σ pengeluaran bertag
+Sisa belum dibagi = Total Saldo − Σ saldo kantong     (hanya validasi, bukan kartu)
+```
+
+- Menambah/mengubah saldo kantong melebihi sisa Total Saldo → ditolak backend.
+- Tidak ada tabel riwayat pindah saldo; `base_balance` dihitung ulang dari nilai yang diisi user.
+- `pockets.allocated` **deprecated** (diganti `base_balance` di `migration_pockets_v3.sql`).
+- Edit Total Saldo hanya lewat transaksi biasa (misal pemasukan berjudul "Saldo Awal").
 
 Recommended response style:
 
@@ -314,8 +334,9 @@ Error response:
 ## 13. Screen Responsibilities
 
 ### `HomeScreen.jsx`
-- Show monthly total spending.
-- Show total number of transactions.
+- Show **Total Saldo** (read-only, dari semua transaksi) as the headline card.
+- Show monthly summary (pemasukan, pengeluaran, saldo bersih bulan ini).
+- Show kantong cards (nama + saldo saja) saat Bagi Saldo aktif; ketuk kartu → `PocketDetail`.
 - Show latest 5 transactions.
 - Provide button to add transaction.
 - Navigate to transaction detail when a transaction card is tapped.
@@ -323,7 +344,7 @@ Error response:
 ### `TransactionListScreen.jsx`
 - Show all transactions.
 - Support empty state.
-- Future improvement: filter by category/date/month.
+- Filter by kategori (Bagi Saldo mati) atau nama kantong (Bagi Saldo aktif). Tidak ada filter "Tanpa Kantong".
 
 ### `TransactionDetailScreen.jsx`
 - Show transaction detail.
@@ -333,7 +354,8 @@ Error response:
 ### `AddTransactionScreen.jsx`
 - Manual form input for title, amount, category, date, and note.
 - Validate required fields before saving.
-- Saat **Bagi Saldo aktif**: tampilkan picker **kantong** (wajib); saat mati: picker **kategori default**.
+- Saat **Bagi Saldo aktif**: tampilkan picker **kantong** dan itu **opsional** (berlaku untuk pemasukan maupun pengeluaran). Tanpa kantong → `category = 'Lainnya'`.
+- Saat **Bagi Saldo mati**: picker **kategori default** (wajib untuk pengeluaran).
 
 ### `EditTransactionScreen.jsx`
 - Load existing transaction by ID.
@@ -341,13 +363,15 @@ Error response:
 - Allow update.
 - Return to detail/list after successful save.
 
-### `AllocateScreen.jsx`
-- Atur jatah saldo per kantong (dinamis, sekali set).
-- Guard: kalau belum ada kantong, arahkan ke Kelola Kantong.
-
 ### `ManagePocketsScreen.jsx`
-- Tambah / ubah / hapus kantong + jatah, pilih icon & warna.
-- Hapus kantong → transaksinya jadi "Tanpa Kantong".
+- Tambah / ubah / hapus kantong, pilih icon & warna.
+- Isi **saldo kantong** langsung (bukan jatah). Backend menolak kalau melebihi sisa Total Saldo.
+- Hapus kantong → transaksinya jadi tanpa kantong, Total Saldo tidak berubah.
+
+### `PocketDetailScreen.jsx`
+- Dibuka dari kartu kantong di Home.
+- Header: saldo kantong saat ini.
+- Daftar transaksi bertag ke kantong itu (`GET /pockets/:id/transactions`), bisa diketuk ke detail transaksi.
 
 ### `ProfileScreen.jsx`
 - Info user + logout.
@@ -367,18 +391,20 @@ Error response:
 10. Build `ReportScreen` and `ProfileScreen`.
 11. Redesign color palette.
 12. **Bagi Saldo**: kantong opsional + custom (CRUD, toggle, integrasi form & laporan).
-13. Polish UI and prepare portfolio/demo.
+13. **Revisi kantong & saldo** (24 Nov 2026): Total Saldo read-only, kantong = wadah saldo (nama + saldo saja), set saldo langsung, drill-down transaksi per kantong, "Tanpa Kantong" dihapus, `AllocateScreen` dihapus.
+14. Polish UI and prepare portfolio/demo.
 
 ## 15. Current Status
 
-- Backend deployed to Vercel (production): `https://backend-delta-sand-64.vercel.app` (v1.2.0, pocket API live)
-- Migrasi `migration_pockets_v2.sql` sudah dijalankan di Supabase
-- All mobile screens built (Home, Add, List, Detail, Edit, Report, Profile, Allocate, ManagePockets)
-- **Bagi Saldo**: fitur kantong opsional + kantong custom, toggle di Profil, e2e terverifikasi
-- Groq Vision: model tidak lagi tersedia → fitur scan **dimatikan** (tab + tombol dihapus), kode disimpan
+- Backend deployed to Vercel (production): `https://backend-delta-sand-64.vercel.app`
+- Migrasi `migration_pockets_v2.sql` dan `migration_pockets_v3.sql` sudah dijalankan di Supabase
+- All mobile screens built (Home, Add, List, Detail, Edit, Report, Profile, ManagePockets, PocketDetail)
+- **Bagi Saldo**: kantong custom + opsional, toggle di Profil. Revisi saldo (v1.3.0) sudah di-deploy backend-nya, tinggal tes e2e di device
+- **Model saldo**: `Total Saldo` read-only dari transaksi; `saldo kantong = base_balance + transaksi bertag`; tidak ada "Saldo Utama" dan tidak ada bucket "Tanpa Kantong"
+- **Scan struk**: aktif dengan Gemini Vision; kantong saat simpan hasil scan juga opsional
 - Mobile app connects to Vercel backend (BASE_URL di `api.js`)
 - App version `1.2.0`, `versionCode 3`; `expo-updates` belum dipasang (tiap update perlu rebuild + reinstall)
-- Next milestone: build APK v1.2.0 via `eas build --platform android --profile preview`
+- Next milestone: tes e2e revisi kantong, lalu build APK baru via `eas build --platform android --profile preview`
 
 ## 16. AI Agent Behavior Rules
 
@@ -422,8 +448,9 @@ mkdir constants
 mkdir utils
 cd ..
 
-# Deploy backend to Vercel
-vercel --cwd backend --prod --yes --force
+# Deploy backend to Vercel (jalankan dari root repo)
+# Root Directory project sudah di-set ke 'backend', JANGAN pakai --cwd backend
+vercel --prod --yes --force
 
 # Set environment variables on Vercel
 echo "value" | vercel env add VAR_NAME production --yes

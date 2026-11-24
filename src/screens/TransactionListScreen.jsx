@@ -126,11 +126,7 @@ export default function TransactionListScreen({ navigation }) {
     );
 
     if (activeFilter !== 'Semua') {
-      if (activeFilter === 'Tanpa Kantong') {
-        filtered = filtered.filter((t) => !t.pocketId);
-      } else {
-        filtered = filtered.filter((t) => t.category === activeFilter);
-      }
+      filtered = filtered.filter((t) => t.category === activeFilter);
     }
 
     if (searchQuery.trim()) {
@@ -169,7 +165,7 @@ export default function TransactionListScreen({ navigation }) {
 
   const filterOptions = useMemo(() => {
     if (pocketsEnabled) {
-      return ['Semua', ...pockets.map((p) => p.name), 'Tanpa Kantong'];
+      return ['Semua', ...pockets.map((p) => p.name)];
     }
     return ['Semua', ...CATEGORIES.map((c) => c.label)];
   }, [pocketsEnabled, pockets]);

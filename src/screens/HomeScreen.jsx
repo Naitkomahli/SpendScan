@@ -74,7 +74,7 @@ export default function HomeScreen({ navigation }) {
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
     const categoryBreakdown = monthTxs
-      .filter((t) => t.type === 'expense')
+      .filter((t) => t.type === 'expense' && (!pocketsEnabled || t.pocketId))
       .reduce((acc, t) => {
         const existing = acc.find((c) => c.category === t.category);
         if (existing) {
@@ -86,20 +86,7 @@ export default function HomeScreen({ navigation }) {
       }, [])
       .sort((a, b) => b.total - a.total);
 
-    const pocketSpent = {};
-    let tanpaKantong = 0;
-
-    monthTxs
-      .filter((t) => t.type === 'expense')
-      .forEach((t) => {
-        if (t.pocketId) {
-          pocketSpent[t.pocketId] = (pocketSpent[t.pocketId] || 0) + Number(t.amount);
-        } else if (pocketsEnabled) {
-          tanpaKantong += Number(t.amount);
-        }
-      });
-
-    return { income, expense, balance: income - expense, categoryBreakdown, pocketSpent, tanpaKantong };
+    return { income, expense, balance: income - expense, categoryBreakdown };
   }, [transactions, currentMonth, pocketsEnabled]);
 
   const overallData = useMemo(() => {
@@ -218,7 +205,7 @@ export default function HomeScreen({ navigation }) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.pocketEmptyTitle}>Belum ada kantong</Text>
                   <Text style={styles.pocketEmptyText}>
-                    Buat kantong dulu untuk mulai mencatat pengeluaran.
+                    Buat kantong untuk membagi saldo kamu.
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
@@ -234,31 +221,20 @@ export default function HomeScreen({ navigation }) {
                       color: p.color || colors.primary,
                       container: `${p.color || colors.primary}22`,
                     }}
-                    allocated={p.allocated || 0}
-                    spent={monthData?.pocketSpent?.[p.id] || 0}
+                    balance={p.balance || 0}
+                    onPress={() =>
+                      navigation.navigate('PocketDetail', { id: p.id, name: p.name })
+                    }
                   />
                 ))}
 
-                {monthData?.tanpaKantong > 0 && (
-                  <PocketCard
-                    pocket={{
-                      label: 'Tanpa Kantong',
-                      icon: 'help-circle',
-                      color: colors.textSecondary,
-                      container: colors.surfaceContainer,
-                    }}
-                    allocated={0}
-                    spent={monthData.tanpaKantong}
-                  />
-                )}
-
                 <TouchableOpacity
-                  style={styles.allocateButton}
-                  onPress={() => navigation.navigate('Allocate')}
+                  style={styles.managePocketsButton}
+                  onPress={() => navigation.navigate('ManagePockets')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="pie-chart-outline" size={18} color={colors.primary} />
-                  <Text style={styles.allocateButtonText}>Bagi Saldo</Text>
+                  <Ionicons name="wallet-outline" size={18} color={colors.primary} />
+                  <Text style={styles.managePocketsButtonText}>Atur Saldo Kantong</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -442,7 +418,7 @@ const styles = StyleSheet.create({
   },
   pocketEmptyTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
   pocketEmptyText: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  allocateButton: {
+  managePocketsButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -452,7 +428,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 16,
   },
-  allocateButtonText: { fontSize: 14, fontWeight: '700', color: colors.primary },
+  managePocketsButtonText: { fontSize: 14, fontWeight: '700', color: colors.primary },
 
   categoryRow: {
     flexDirection: 'row',

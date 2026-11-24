@@ -15,8 +15,8 @@ import EditTransactionScreen from '../screens/EditTransactionScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ReportScreen from '../screens/ReportScreen';
 import LoginScreen from '../screens/LoginScreen';
-import AllocateScreen from '../screens/AllocateScreen';
 import ManagePocketsScreen from '../screens/ManagePocketsScreen';
+import PocketDetailScreen from '../screens/PocketDetailScreen';
 import ScanScreen from '../screens/ScanScreen';
 
 // ----- Stack Navigator untuk Tab Home -----
@@ -56,9 +56,13 @@ function HomeStackScreen() {
         options={{ headerShown: false }}
       />
       <HomeStack.Screen
-        name="Allocate"
-        component={AllocateScreen}
-        options={{ headerShown: true, title: 'Bagi Saldo', headerTintColor: colors.text }}
+        name="PocketDetail"
+        component={PocketDetailScreen}
+        options={({ route }) => ({
+          headerShown: true,
+          title: route.params?.name || 'Kantong',
+          headerTintColor: colors.text,
+        })}
       />
       <HomeStack.Screen
         name="ManagePockets"

@@ -33,7 +33,7 @@ const EMPTY_FORM = {
   name: '',
   icon: DEFAULT_POCKET_ICON,
   color: DEFAULT_POCKET_COLOR,
-  allocated: '',
+  balance: '',
 };
 
 export default function ManagePocketsScreen({ navigation }) {
@@ -77,7 +77,7 @@ export default function ManagePocketsScreen({ navigation }) {
       name: pocket.name,
       icon: pocket.icon || DEFAULT_POCKET_ICON,
       color: pocket.color || DEFAULT_POCKET_COLOR,
-      allocated: String(pocket.allocated || 0),
+      balance: String(pocket.balance || 0),
     });
     setError('');
     setModalVisible(true);
@@ -90,9 +90,9 @@ export default function ManagePocketsScreen({ navigation }) {
       return;
     }
 
-    const allocated = Number(form.allocated) || 0;
-    if (allocated < 0) {
-      setError('Alokasi tidak boleh negatif');
+    const balance = Number(form.balance) || 0;
+    if (balance < 0) {
+      setError('Saldo tidak boleh negatif');
       return;
     }
 
@@ -103,14 +103,14 @@ export default function ManagePocketsScreen({ navigation }) {
           name,
           icon: form.icon,
           color: form.color,
-          allocated,
+          balance,
         });
       } else {
         await createPocket({
           name,
           icon: form.icon,
           color: form.color,
-          allocated,
+          balance,
         });
       }
       setModalVisible(false);
@@ -125,7 +125,7 @@ export default function ManagePocketsScreen({ navigation }) {
   function confirmDelete(pocket) {
     Alert.alert(
       'Hapus Kantong',
-      `Hapus "${pocket.name}"? Transaksi yang pernah masuk kantong ini akan jadi "Tanpa Kantong".`,
+      `Hapus "${pocket.name}"? Transaksi yang pernah masuk kantong ini tidak lagi tampil di kantong mana pun. Total Saldo tidak berubah.`,
       [
         { text: 'Batal', style: 'cancel' },
         {
@@ -156,7 +156,9 @@ export default function ManagePocketsScreen({ navigation }) {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.intro}>
-          Buat kantong sesuka kamu. Setiap kantong bisa diberi nama, icon, dan warna sendiri.
+          Kantong dipakai untuk membagi uang. Isi saldo tiap kantong sesuka kamu — Total Saldo
+          tidak berubah, hanya posisi uangnya. Ketuk kartu kantong di Home untuk melihat
+          transaksinya.
         </Text>
 
         {pockets.length === 0 ? (
@@ -175,7 +177,7 @@ export default function ManagePocketsScreen({ navigation }) {
               </View>
               <View style={styles.cardInfo}>
                 <Text style={styles.cardName}>{p.name}</Text>
-                <Text style={styles.cardAlloc}>Jatah: {formatCurrency(p.allocated)}</Text>
+                <Text style={styles.cardAlloc}>Saldo: {formatCurrency(p.balance)}</Text>
               </View>
               <TouchableOpacity style={styles.iconBtn} onPress={() => openEdit(p)}>
                 <Ionicons name="create-outline" size={18} color={colors.primary} />
@@ -217,14 +219,14 @@ export default function ManagePocketsScreen({ navigation }) {
                 }}
               />
 
-              <Text style={styles.label}>Jatah Saldo (Rp)</Text>
+              <Text style={styles.label}>Saldo Kantong (Rp)</Text>
               <TextInput
                 style={styles.input}
                 placeholder="0"
                 placeholderTextColor={colors.textSecondary}
-                value={form.allocated}
+                value={form.balance}
                 onChangeText={(t) =>
-                  setForm((f) => ({ ...f, allocated: t.replace(/[^0-9]/g, '') }))
+                  setForm((f) => ({ ...f, balance: t.replace(/[^0-9]/g, '') }))
                 }
                 keyboardType="numeric"
               />

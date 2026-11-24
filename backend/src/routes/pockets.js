@@ -5,6 +5,7 @@ const {
   create,
   update,
   remove,
+  getTransactions,
   setEnabled,
 } = require('../controllers/pocketController');
 
@@ -15,6 +16,7 @@ router.use(authenticate);
 router.get('/', getAll);
 router.post('/', create);
 router.patch('/settings', setEnabled); // harus di atas '/:id'
+router.get('/:id/transactions', getTransactions);
 router.patch('/:id', update);
 router.delete('/:id', remove);
 

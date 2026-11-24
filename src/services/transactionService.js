@@ -1,7 +1,7 @@
 import { apiRequest } from './api';
 import { readAsStringAsync } from 'expo-file-system/legacy';
 
-function fromSnakeCase(item) {
+export function fromSnakeCase(item) {
   return {
     id: item.id,
     userId: item.user_id,

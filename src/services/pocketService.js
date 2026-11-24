@@ -1,4 +1,5 @@
 import { apiRequest } from './api';
+import { fromSnakeCase } from './transactionService';
 
 /**
  * Ambil daftar kantong + status fitur Bagi Saldo.
@@ -19,10 +20,10 @@ export async function getPockets() {
   return { enabled: false, pockets: [] };
 }
 
-export async function createPocket({ name, icon, color, allocated = 0 }) {
+export async function createPocket({ name, icon, color, balance = 0 }) {
   return apiRequest('/pockets', {
     method: 'POST',
-    body: JSON.stringify({ name, icon, color, allocated }),
+    body: JSON.stringify({ name, icon, color, balance }),
   });
 }
 
@@ -31,6 +32,11 @@ export async function updatePocket(id, patch) {
     method: 'PATCH',
     body: JSON.stringify(patch),
   });
+}
+
+export async function getPocketTransactions(id) {
+  const data = await apiRequest(`/pockets/${id}/transactions`);
+  return Array.isArray(data) ? data.map(fromSnakeCase) : [];
 }
 
 export async function deletePocket(id) {

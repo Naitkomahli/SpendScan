@@ -61,7 +61,7 @@ The user is the sole developer of this project. Responsibilities cover the full 
 - Design database schema in Supabase/PostgreSQL
 - Handle authentication and user data
 - Store receipt images in Supabase Storage
-- Set up AI receipt parsing using Groq Vision
+- Set up AI receipt parsing using Gemini Vision
 - Return transaction and receipt scan data to mobile app
 
 ## 6. Tech Stack
@@ -85,8 +85,8 @@ The user is the sole developer of this project. Responsibilities cover the full 
 - Supabase/PostgreSQL
 - Supabase Storage
 - Tesseract.js (OCR)
-- OpenAI SDK (LLM client untuk Groq API)
-- Groq AI (Llama 3.3 70B untuk receipt parsing)
+- OpenAI SDK (LLM client untuk Gemini, endpoint OpenAI-compatible)
+- Google Gemini Vision (`gemini-3.6-flash` untuk receipt parsing)
 - jsonwebtoken (JWT auth)
 - bcryptjs (password hashing)
 
@@ -133,11 +133,13 @@ The user is the sole developer of this project. Responsibilities cover the full 
 1. Fitur **opsional** — mati secara default. Dinyalakan lewat switch **Bagi Saldo** di layar Profil.
 2. Saat pertama nyala, kantong **kosong**; user membangun sendiri lewat layar **Kelola Kantong**.
 3. User bisa tambah / rename / hapus / urutkan kantong, serta memilih icon dan warna.
-4. Tiap kantong bisa diberi **jatah saldo** lewat layar **Bagi Saldo** (alokasi sekali, bukan bulanan).
-5. Saat Bagi Saldo **aktif**, form pengeluaran memakai daftar kantong (bukan kategori) dan user **wajib** memilih satu kantong.
-6. Saat Bagi Saldo **mati**, form pengeluaran memakai **8 kategori default**.
-7. Menghapus kantong → transaksinya tidak hilang, jadi **"Tanpa Kantong"** (bucket virtual, tidak bisa dipilih manual).
-8. Home menampilkan section kantong hanya saat fitur aktif, lengkap dengan sisa jatah dan jumlah terpakai.
+4. Tiap kantong punya **saldo** yang diisi langsung di layar **Kelola Kantong** (bukan jatah, tanpa tabel riwayat pindah saldo).
+5. Saldo kantong = `base_balance` + Σ pemasukan bertag − Σ pengeluaran bertag, jadi edit/hapus transaksi otomatis membetulkan angkanya.
+6. Saat Bagi Saldo **aktif**, form memakai daftar kantong (bukan kategori) dan kantong **opsional** untuk pemasukan maupun pengeluaran.
+7. Saat Bagi Saldo **mati**, form pengeluaran memakai **8 kategori default**.
+8. Transaksi tanpa kantong disimpan dengan `category = 'Lainnya'`, tetap masuk Total Saldo, tidak muncul sebagai bucket kantong.
+9. Menghapus kantong → transaksinya jadi tanpa kantong (`ON DELETE SET NULL`), Total Saldo tidak berubah.
+10. Home menampilkan kartu kantong **nama + saldo saja**; ketuk kartu → daftar transaksi kantong itu.
 
 ### Receipt Scan Flow ❌ (Disabled)
 > Fitur scan struk **dimatikan** (user jarang memakainya). Kode layar tetap disimpan untuk kemungkinan diaktifkan lagi.
@@ -149,7 +151,7 @@ The user is the sole developer of this project. Responsibilities cover the full 
 4. Image preview appears.
 5. User taps **"Scan Struk"** → loading overlay with OCR progress.
 6. Backend runs OCR via Tesseract.js → extracts raw text.
-7. Backend sends raw text to **Groq AI (Llama 3.3 70B)** via LLM service.
+7. Backend sends the image to **Gemini Vision (`gemini-3.6-flash`)** and gets structured JSON back.
 8. LLM intelligently parses the text → returns structured JSON with:
    - Merchant name
    - Transaction date
@@ -185,15 +187,15 @@ The user is the sole developer of this project. Responsibilities cover the full 
 - Month filter in History screen.
 - Receipt image upload (camera/gallery).
 - OCR processing via Tesseract.js.
-- LLM-based receipt parsing via Groq AI (Llama 3.3 70B).
+- LLM-based receipt parsing via Google Gemini Vision (`gemini-3.6-flash`, endpoint OpenAI-compatible).
 - Item-level extraction (name + price per item).
 - Item review screen (edit, delete, add items).
 - Batch save multiple transactions from one receipt.
 - Image upload to Supabase Storage.
 - Bagi Saldo: fitur kantong opsional dengan kantong custom (nama/icon/warna/urutan).
-- Layar **Kelola Kantong** (tambah/ubah/hapus/jatah).
-- Pengeluaran wajib pilih kantong saat fitur aktif; kategori default saat mati.
-- Bucket **"Tanpa Kantong"** untuk transaksi yang kantongnya dihapus.
+- Layar **Kelola Kantong** (tambah/ubah/hapus + isi saldo kantong).
+- Kantong opsional saat Bagi Saldo aktif; kategori default saat mati.
+- Total Saldo read-only dari transaksi; kartu kantong hanya nama + saldo.
 
 ### ❌ Remaining
 - Better statistics / yearly comparison.
@@ -334,8 +336,8 @@ The user is the sole developer of this project. Responsibilities cover the full 
 - Tapping outside modal closes month picker.
 - Works with empty data (shows flat line).
 
-### FR-008 — Scan & OCR Receipt ❌ (Disabled)
-> Dimatikan di v1.2.0. Tab Scan dihapus dari navigasi dan tombol scan dihapus dari form tambah transaksi. Endpoint `/api/receipts/scan` masih ada, tapi butuh provider vision baru.
+### FR-008 — Scan & OCR Receipt ✅ (Active)
+> Sempat dimatikan di v1.2.0, lalu diaktifkan kembali di v1.2.1 pakai Google Gemini Vision (`gemini-3.6-flash`). Tab Scan ada di Bottom Tab navigator; hasil scan bisa langsung disimpan, kantong opsional.
 
 **Description:** User can scan a receipt and the app extracts individual items using OCR + AI parsing.
 
@@ -344,7 +346,7 @@ The user is the sole developer of this project. Responsibilities cover the full 
 - Image preview after selection.
 - Loading overlay with status during OCR processing.
 - Backend OCR via Tesseract.js extracts raw text.
-- Backend sends raw text to **Groq AI (Llama 3.3 70B)** for intelligent parsing.
+- Backend sends the image to **Gemini Vision (`gemini-3.6-flash`)** for parsing.
 - LLM returns structured JSON: merchant, date, items (name + price).
 - Review screen showing all extracted items.
 - Each item editable (name, amount) via modal.
@@ -417,11 +419,13 @@ The user is the sole developer of this project. Responsibilities cover the full 
 **Requirements:**
 - Fitur opsional: switch **Bagi Saldo** di Profil, tersimpan di `users.pockets_enabled`.
 - Kantong sepenuhnya custom: jumlah bebas, nama/icon/warna/urutan ditentukan user.
-- Layar **Kelola Kantong**: tambah, ubah, hapus, dan atur jatah.
-- Saat aktif: form pengeluaran memakai daftar kantong dan **wajib** memilih kantong.
+- Layar **Kelola Kantong**: tambah, ubah, hapus, dan isi saldo kantong langsung.
+- Saldo kantong dihitung dari `base_balance` + transaksi bertag (bukan angka yang dimutasi).
+- Set saldo melebihi sisa Total Saldo ditolak; data lama yang sudah kelebihan tidak dihukum.
+- Saat aktif: form memakai daftar kantong dan kantong **opsional** (pemasukan maupun pengeluaran).
 - Saat mati: form pengeluaran memakai 8 kategori default.
-- Menghapus kantong → transaksi terkait jadi **"Tanpa Kantong"** (FK `ON DELETE SET NULL`); data tidak hilang.
-- Home menampilkan section kantong hanya saat fitur aktif (jatah, terpakai, sisa).
+- Menghapus kantong → transaksi terkait jadi tanpa kantong (FK `ON DELETE SET NULL`); data dan Total Saldo tidak berubah.
+- Home menampilkan kartu kantong (nama + saldo); ketuk → daftar transaksi kantong itu.
 - Nama kantong unik per user (ditolak bila duplikat).
 - Guard: fitur aktif tapi kantong masih 0 → form menampilkan ajakan "Buat kantong dulu".
 
@@ -474,7 +478,7 @@ The user is the sole developer of this project. Responsibilities cover the full 
   name: 'string',
   icon: 'string (Ionicons name)',
   color: 'string (hex)',
-  allocated: 500000,
+  balance: 500000,
   sortOrder: 1
 }
 ```
@@ -538,7 +542,7 @@ The user is the sole developer of this project. Responsibilities cover the full 
 | raw_ocr_text | text | Optional |
 | source | text | `manual` or `ocr` |
 | type | varchar(10) | `income` or `expense`, default `expense` |
-| pocket_id | uuid | FK ke `pockets`, `ON DELETE SET NULL`, optional. Null = "Tanpa Kantong" |
+| pocket_id | uuid | FK ke `pockets`, `ON DELETE SET NULL`, optional. Null = tanpa kantong |
 | created_at | timestamp | Auto timestamp |
 | updated_at | timestamp | Auto timestamp |
 
@@ -551,7 +555,8 @@ The user is the sole developer of this project. Responsibilities cover the full 
 | name | text | Required, unik per user |
 | icon | text | Ionicons name, default `wallet` |
 | color | text | Hex color, default `#2F6B4F` |
-| allocated | numeric | Jatah saldo, default 0 |
+| base_balance | numeric | Saldo yang di-set user, default 0 |
+| allocated | numeric | **Deprecated** (diganti `base_balance` di `migration_pockets_v3.sql`) |
 | sort_order | integer | Urutan tampil, default 0 |
 | created_at | timestamp | Auto timestamp |
 | updated_at | timestamp | Auto timestamp |
@@ -604,11 +609,12 @@ DELETE /api/transactions/:id
 ### Pocket Endpoints (require Bearer token)
 
 ```
-GET    /api/pockets            → { enabled: boolean, pockets: [Pocket] }
-POST   /api/pockets            → body: { name, icon, color, allocated }
+GET    /api/pockets            → { enabled: boolean, pockets: [{ id, name, icon, color, balance, sortOrder }] }
+POST   /api/pockets            → body: { name, icon, color, balance }
 PATCH  /api/pockets/settings   → body: { enabled: boolean }   (toggle Bagi Saldo)
-PATCH  /api/pockets/:id        → body: { name?, icon?, color?, allocated?, sortOrder? }
-DELETE /api/pockets/:id        → transaksi terkait jadi "Tanpa Kantong"
+PATCH  /api/pockets/:id        → body: { name?, icon?, color?, balance?, sortOrder? }
+DELETE /api/pockets/:id        → transaksi terkait jadi tanpa kantong
+GET    /api/pockets/:id/transactions → transaksi yang bertag ke kantong itu
 ```
 
 ### Create Transaction Request
@@ -714,9 +720,9 @@ NavigationContainer
                 └── EditTransaction
 ```
 
-Tab order: Home (left) → History (right).
+Tab order: Home → Scan → History.
 
-> Tab **Scan** dihapus di v1.2.0 (fitur scan struk dimatikan).
+> Tab **Scan** sempat dihapus di v1.2.0, lalu dikembalikan di v1.2.1 (Gemini Vision).
 
 ## 15. File Structure
 
@@ -832,7 +838,7 @@ SpendScan/
 - API client helper (apiRequest with base64, FormData support).
 - Replace mock with real API calls.
 - Field mapping (snake_case ↔ camelCase).
-- LLM parser service (llmParser.js → Groq API).
+- LLM parser service (llmParser.js → Gemini Vision, endpoint OpenAI-compatible).
 
 ### Phase 9 ✅ — Income/Expense & Dashboard
 - Add type field (income/expense).
@@ -859,7 +865,7 @@ SpendScan/
 - Build real ScanScreen with camera/gallery option modal.
 - Expo image picker integration.
 - Backend OCR via Tesseract.js → raw text.
-- LLM-based item parsing via Groq AI API (Llama 3.3 70B).
+- LLM-based item parsing via Google Gemini Vision API (`gemini-3.6-flash`).
 - Item review screen with edit/delete/add capabilities.
 - Batch save multiple transactions from one receipt.
 - Image upload to Supabase Storage.
@@ -880,6 +886,15 @@ SpendScan/
 - Home/Allocate/Add/Edit/Report/History sadar kantong.
 - Bucket "Tanpa Kantong" untuk transaksi tanpa kantong.
 - Matikan fitur scan struk + perbaiki bug-nya.
+
+### Phase 15 ✅ — Revisi Kantong & Saldo (v1.3.0)
+- Total Saldo read-only (`Σ pemasukan − Σ pengeluaran`), tidak ada "Saldo Utama".
+- `pockets.allocated` diganti `base_balance` (`migration_pockets_v3.sql`); saldo kantong turunan, bukan dimutasi.
+- Set saldo kantong langsung di Kelola Kantong; validasi terhadap sisa Total Saldo.
+- Kartu kantong: nama + saldo saja; ketuk → `PocketDetailScreen` (daftar transaksi kantong).
+- Kantong opsional untuk pemasukan dan pengeluaran; tanpa kantong → `category = 'Lainnya'`.
+- Bucket "Tanpa Kantong" dan layar `AllocateScreen` dihapus.
+- Scan struk aktif kembali pakai Gemini Vision.
 
 ## 17. Mobile Service Layer
 
@@ -914,10 +929,11 @@ transactionService.scanReceipt(image)    // POST /api/receipts/scan → OCR resu
 
 ```js
 pocketService.getPockets()                 // GET /api/pockets → { enabled, pockets }
-pocketService.createPocket({ name, icon, color, allocated })
+pocketService.createPocket({ name, icon, color, balance })
 pocketService.updatePocket(id, patch)      // PATCH /api/pockets/:id
 pocketService.deletePocket(id)             // DELETE /api/pockets/:id
 pocketService.setPocketsEnabled(enabled)   // PATCH /api/pockets/settings
+pocketService.getPocketTransactions(id)    // GET /api/pockets/:id/transactions
 ```
 
 ## 18. Validation Rules
@@ -928,7 +944,7 @@ pocketService.setPocketsEnabled(enabled)   // PATCH /api/pockets/settings
 - `amount` is required.
 - `amount` must be a positive number.
 - `category` is required (auto-set for income).
-- Saat **Bagi Saldo aktif**, `pocketId` wajib (menggantikan `category`); `category` di-mirror dari nama kantong.
+- Saat **Bagi Saldo aktif**, `pocketId` **opsional** (pemasukan maupun pengeluaran); tanpa kantong → `category = 'Lainnya'`.
 - `transactionDate` is required.
 - `note` is optional.
 
@@ -1006,8 +1022,9 @@ A feature is considered done when:
 - [x] Profile screen: user info + logout.
 - [x] Avatar navigates to Profile.
 - [x] Laporan button navigates to Report.
-- [x] Bottom tabs: Home→History (tab Scan dihapus di v1.2.0).
-- [x] Bagi Saldo: toggle di Profil, Kelola Kantong, wajib pilih kantong saat aktif, bucket "Tanpa Kantong".
+- [x] Bottom tabs: Home → Scan → History.
+- [x] Bagi Saldo: toggle di Profil, Kelola Kantong, kantong opsional (v1.3.0), kartu kantong nama + saldo, drill-down transaksi kantong.
+- [x] Total Saldo read-only, saldo kantong turunan dari `base_balance` + transaksi bertag.
 - [x] Loading skeletons appear.
 - [x] Empty state shows when no data.
 - [x] Network error shows retry option.
@@ -1038,7 +1055,7 @@ A feature is considered done when:
 
 ## 24. Next Recommended Task
 
-Fitur inti + Bagi Saldo selesai (v1.2.0). Berikutnya **Phase 13 — Portfolio Polish**:
+Fitur inti + Bagi Saldo + revisi kantong selesai (v1.3.0). Berikutnya **Phase 13 — Portfolio Polish**:
 
 1. Create `README.md` with project overview, tech stack, screenshots, and setup guide.
 2. Add Splash Screen (`expo-splash-screen`) with SpendScan logo.
